@@ -4,6 +4,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+typedef struct cpu {
+    cpu_registers registers;
+    bus bus;
+} cpu;
+
 typedef struct FlagsRegister {
     bool zero;
     bool subtract;
@@ -29,5 +34,11 @@ uint16_t cpu_read_register_16bit(cpu_registers *registers, const char *reg);
 void cpu_write_register_16bit(cpu_registers *registers, const char *reg, uint16_t value);
 uint8_t flags_register_to_byte(FlagsRegister flags);
 FlagsRegister byte_to_flags_register(uint8_t byte);
+
+void cpu_step(cpu *cpu);
+
+// bus
+
+
 
 #endif
