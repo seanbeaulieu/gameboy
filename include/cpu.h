@@ -3,10 +3,12 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <bus.h>
 
 typedef struct cpu {
     cpu_registers registers;
     bus bus;
+    uint8_t counter;
 } cpu;
 
 typedef struct FlagsRegister {
@@ -25,6 +27,10 @@ typedef struct cpu_registers {
     FlagsRegister f;
     uint8_t h;
     uint8_t l;
+    uint16_t af;
+    uint16_t bc;
+    uint16_t de;
+    uint16_t hl;
     uint16_t pc;
     uint16_t sp;
 } cpu_registers;
@@ -32,6 +38,7 @@ typedef struct cpu_registers {
 void cpu_init(cpu_registers *registers);
 uint16_t cpu_read_register_16bit(cpu_registers *registers, const char *reg);
 void cpu_write_register_16bit(cpu_registers *registers, const char *reg, uint16_t value);
+void cpu_increment_register_16bit(cpu_registers *registers, const char *reg);
 uint8_t flags_register_to_byte(FlagsRegister flags);
 FlagsRegister byte_to_flags_register(uint8_t byte);
 

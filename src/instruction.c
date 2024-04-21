@@ -5,13 +5,27 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
     switch (opcode & 0xF0) {
         case 0x00:
             switch (opcode & 0x0F) {
+                // nop
                 case 0x0:  
+                    // do nothing
                     break;
-                case 0x1:  
+                // ld bc 
+                case 0x1:
+                    // little or big endian??
+                    // also when to read and write to bc and not just b and c? 
+                    cpu->registers.b = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    cpu->registers.c = bus_read8(&cpu->bus, cpu->registers.pc++);
+
                     break;
-                case 0x2:  
+                // ld (bc)
+                case 0x2: 
+                    // write to the absolute address present in BC, whatever is in the A register
+                    bus_write8(&cpu->bus, &cpu->registers.bc, cpu->registers.a);
                     break;
+                // inc bc
                 case 0x3:  
+                    // increment the register bc
+                    cpu_increment_register_16bit(&cpu->registers, 'bc');
                     break;
                 case 0x4:  
                     break;
