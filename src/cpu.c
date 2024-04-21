@@ -8,7 +8,7 @@
 #define CARRY_FLAG_BYTE_POSITION 4
 
 // initialize cpu registers
-// 
+// todo
 void cpu_init(cpu_registers *registers) {
     memset(registers, 0, sizeof(cpu_registers));
 }
@@ -16,17 +16,13 @@ void cpu_init(cpu_registers *registers) {
 // use switch here?
 uint16_t cpu_read_register_16bit(cpu_registers *registers, const char *reg) {
     if (strcmp(reg, "af") == 0)
-        return (registers->a << 8) | flags_register_to_byte(byte_to_flags_register(&registers->f));
+        return (uint16_t)((registers->a << 8) | flags_register_to_byte(byte_to_flags_register(&registers->f)));
     else if (strcmp(reg, "bc") == 0)
-        return registers->bc;
+        return (uint16_t)((registers->b << 8) | registers->c);
     else if (strcmp(reg, "de") == 0)
-        return registers->de;
+        return (uint16_t)((registers->d << 8) | registers->e);
     else if (strcmp(reg, "hl") == 0)
-        return registers->hl;
-    else if (strcmp(reg, "pc") == 0)
-        return registers->pc;
-    else if (strcmp(reg, "sp") == 0)
-        return registers->sp;
+        return (uint16_t)((registers->h << 8) | registers->l);
     else
         return 0;
 }
@@ -34,7 +30,7 @@ uint16_t cpu_read_register_16bit(cpu_registers *registers, const char *reg) {
 void cpu_write_register_16bit(cpu_registers *registers, const char *reg, uint16_t value) {
     if (strcmp(reg, "af") == 0) {
         registers->a = (value >> 8) & 0xFF;
-        registers->f = flags_register_to_byte(byte_to_flags_register(value & 0xFF));
+        registers->f = byte_to_flags_register(value & 0xFF);
     } else if (strcmp(reg, "bc") == 0) {
         registers->bc = value;
     } else if (strcmp(reg, "de") == 0) {
@@ -52,15 +48,37 @@ void cpu_increment_register_16bit(cpu_registers *registers, const char *reg) {
     if (strcmp(reg, "bc") == 0) {
         uint16_t nn = registers->bc + 1;
         registers->bc = nn;
+        registers->b = nn >> 8;
+		registers->c = nn & 0xFF;
     } else if (strcmp(reg, "de") == 0) {
         uint16_t nn = registers->de + 1;
         registers->de = nn;
+        registers->d = nn >> 8;
+		registers->e = nn & 0xFF;
     } else if (strcmp(reg, "hl") == 0) {
         uint16_t nn = registers->hl + 1;
         registers->hl = nn;
-    } else if (strcmp(reg, "sp") == 0) {
-        uint16_t nn = registers->sp + 1;
-        registers->sp = nn;
+        registers->h = nn >> 8;
+		registers->l = nn & 0xFF;
+    }
+}
+
+void cpu_decrement_register_16bit(cpu_registers *registers, const char *reg) {
+    if (strcmp(reg, "bc") == 0) {
+        uint16_t nn = registers->bc - 1;
+        registers->bc = nn;
+        registers->b = nn >> 8;
+		registers->c = nn & 0xFF;
+    } else if (strcmp(reg, "de") == 0) {
+        uint16_t nn = registers->de - 1;
+        registers->de = nn;
+        registers->d = nn >> 8;
+		registers->e = nn & 0xFF;
+    } else if (strcmp(reg, "hl") == 0) {
+        uint16_t nn = registers->hl - 1;
+        registers->hl = nn;
+        registers->h = nn >> 8;
+		registers->l = nn & 0xFF;
     }
 }
 

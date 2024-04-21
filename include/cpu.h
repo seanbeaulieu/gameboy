@@ -39,6 +39,7 @@ void cpu_init(cpu_registers *registers);
 uint16_t cpu_read_register_16bit(cpu_registers *registers, const char *reg);
 void cpu_write_register_16bit(cpu_registers *registers, const char *reg, uint16_t value);
 void cpu_increment_register_16bit(cpu_registers *registers, const char *reg);
+void cpu_decrement_register_16bit(cpu_registers *registers, const char *reg);
 uint8_t flags_register_to_byte(FlagsRegister flags);
 FlagsRegister byte_to_flags_register(uint8_t byte);
 
