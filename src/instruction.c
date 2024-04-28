@@ -1051,82 +1051,272 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
 
         case 0xA0:
             switch (opcode & 0x0F) {
+                // and a, b
                 case 0x0:  
+                    cpu->registers.a = cpu->registers.a & cpu->registers.b;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 1;
+                    cpu->registers.f.carry = 0;
                     break;
+                // and a, c
                 case 0x1:  
+                    cpu->registers.a = cpu->registers.a & cpu->registers.c;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 1;
+                    cpu->registers.f.carry = 0;
                     break;
+                // and a, d
                 case 0x2:  
+                    cpu->registers.a = cpu->registers.a & cpu->registers.d;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 1;
+                    cpu->registers.f.carry = 0;
                     break;
+                // and a, e
                 case 0x3:  
+                    cpu->registers.a = cpu->registers.a & cpu->registers.e;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 1;
+                    cpu->registers.f.carry = 0;
                     break;
-                case 0x4:  
+                // and a, h
+                case 0x4:
+                    cpu->registers.a = cpu->registers.a & cpu->registers.h;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 1;
+                    cpu->registers.f.carry = 0;  
                     break;
+                // and a, l
                 case 0x5:  
+                    cpu->registers.a = cpu->registers.a & cpu->registers.l;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 1;
+                    cpu->registers.f.carry = 0;
                     break;
-                case 0x6:  
+                // and a, [hl]
+                case 0x6:
+                    cpu->registers.a = cpu->registers.a & bus_read8(&cpu->bus, cpu_read_register_16bit('hl'));
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 1;
+                    cpu->registers.f.carry = 0;  
                     break;
-                case 0x7:  
+                // and a, a 
+                case 0x7:
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 1;
+                    cpu->registers.f.carry = 0;
                     break;
+                // xor a, b
                 case 0x8:  
+                    cpu->registers.a = cpu->registers.a ^ cpu->registers.b;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0;
                     break;
+                // xor a, c
                 case 0x9:  
+                    cpu->registers.a = cpu->registers.a ^ cpu->registers.c;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0;
                     break;
+                // xor a, d
                 case 0xA:  
+                    cpu->registers.a = cpu->registers.a ^ cpu->registers.d;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0;
                     break;
+                // xor a, e
                 case 0xB:  
+                    cpu->registers.a = cpu->registers.a ^ cpu->registers.e;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0;
                     break;
+                // xor a, h
                 case 0xC:  
+                    cpu->registers.a = cpu->registers.a ^ cpu->registers.h;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0;
                     break;
+                // xor a, l
                 case 0xD:  
+                    cpu->registers.a = cpu->registers.a ^ cpu->registers.l;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0;
                     break;
-                case 0xE:  
+                // xor a, [hl]
+                case 0xE: 
+                    cpu->registers.a = cpu->registers.a ^ bus_read8(&cpu->bus, cpu_read_register_16bit('hl'));
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0;  
                     break;
-                case 0xF:  
+                // xor a
+                case 0xF: 
+                    cpu->registers.a = 0x00;
+                    cpu->registers.f.zero = 1;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0; 
                     break;
             }
             break;
 
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////
         
         case 0xB0:
             switch (opcode & 0x0F) {
+                // or a, b
                 case 0x0:  
+                    cpu->registers.a = cpu->registers.a | cpu->registers.b;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0; 
                     break;
-                case 0x1:  
+                // or a, c
+                case 0x1: 
+                    cpu->registers.a = cpu->registers.a | cpu->registers.c;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0;  
                     break;
+                // or a, d
                 case 0x2:  
+                    cpu->registers.a = cpu->registers.a | cpu->registers.d;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0; 
                     break;
+                // or a, e
                 case 0x3:  
+                    cpu->registers.a = cpu->registers.a | cpu->registers.e;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0; 
                     break;
+                // or a, h
                 case 0x4:  
+                    cpu->registers.a = cpu->registers.a | cpu->registers.h;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0; 
                     break;
+                // or a, l
                 case 0x5:  
+                    cpu->registers.a = cpu->registers.a | cpu->registers.l;
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0; 
                     break;
+                // or a, [hl]
                 case 0x6:  
+                    cpu->registers.a = cpu->registers.a | bus_read8(&cpu->bus, cpu_read_register_16bit('hl'));
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0; 
                     break;
+                // or a, a
                 case 0x7:  
+                    cpu->registers.f.zero = cpu->registers.a == 0x00;
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0; 
                     break;
-                case 0x8:  
+                // cp a, b
+                case 0x8:    
+                    uint16_t nn = cpu->registers.a - cpu->registers.b; 
+                    cpu->registers.f.zero = ((nn & 0xFF) == 0x00);
+                    cpu->registers.f.subtract = 1;
+                    cpu->registers.f.half_carry = (cpu->registers.a ^ cpu->registers.b ^ nn) & 0x10 ? 1 : 0;
+                    cpu->registers.f.carry = (nn & 0xFF00) ? 1 : 0;  
                     break;
-                case 0x9:  
+                // cp a, c
+                case 0x9: 
+                    uint16_t nn = cpu->registers.a - cpu->registers.c; 
+                    cpu->registers.f.zero = ((nn & 0xFF) == 0x00);
+                    cpu->registers.f.subtract = 1;
+                    cpu->registers.f.half_carry = (cpu->registers.a ^ cpu->registers.c ^ nn) & 0x10 ? 1 : 0;
+                    cpu->registers.f.carry = (nn & 0xFF00) ? 1 : 0;   
                     break;
+                // cp a, d
                 case 0xA:  
+                    uint16_t nn = cpu->registers.a - cpu->registers.d; 
+                    cpu->registers.f.zero = ((nn & 0xFF) == 0x00);
+                    cpu->registers.f.subtract = 1;
+                    cpu->registers.f.half_carry = (cpu->registers.a ^ cpu->registers.d ^ nn) & 0x10 ? 1 : 0;
+                    cpu->registers.f.carry = (nn & 0xFF00) ? 1 : 0;  
                     break;
+                // cp a, e
                 case 0xB:  
+                    uint16_t nn = cpu->registers.a - cpu->registers.e; 
+                    cpu->registers.f.zero = ((nn & 0xFF) == 0x00);
+                    cpu->registers.f.subtract = 1;
+                    cpu->registers.f.half_carry = (cpu->registers.a ^ cpu->registers.e ^ nn) & 0x10 ? 1 : 0;
+                    cpu->registers.f.carry = (nn & 0xFF00) ? 1 : 0;  
                     break;
-                case 0xC:  
+                // cp a, h
+                case 0xC: 
+                    uint16_t nn = cpu->registers.a - cpu->registers.h; 
+                    cpu->registers.f.zero = ((nn & 0xFF) == 0x00);
+                    cpu->registers.f.subtract = 1;
+                    cpu->registers.f.half_carry = (cpu->registers.a ^ cpu->registers.h ^ nn) & 0x10 ? 1 : 0;
+                    cpu->registers.f.carry = (nn & 0xFF00) ? 1 : 0;   
                     break;
+                // cp a, l
                 case 0xD:  
+                    uint16_t nn = cpu->registers.a - cpu->registers.l; 
+                    cpu->registers.f.zero = ((nn & 0xFF) == 0x00);
+                    cpu->registers.f.subtract = 1;
+                    cpu->registers.f.half_carry = (cpu->registers.a ^ cpu->registers.l ^ nn) & 0x10 ? 1 : 0;
+                    cpu->registers.f.carry = (nn & 0xFF00) ? 1 : 0;  
                     break;
+                // cp a, [hl]
                 case 0xE:  
+                    uint8_t n = bus_read8(&cpu->bus, cpu_read_register_16bit('hl'));
+                    uint16_t nn = cpu->registers.a - n; 
+                    cpu->registers.f.zero = ((nn & 0xFF) == 0x00);
+                    cpu->registers.f.subtract = 1;
+                    cpu->registers.f.half_carry = (cpu->registers.a ^ n ^ nn) & 0x10 ? 1 : 0;
+                    cpu->registers.f.carry = (nn & 0xFF00) ? 1 : 0;  
                     break;
+                // cp a, a
                 case 0xF:  
+                    cpu->registers.f.zero = 1;
+                    cpu->registers.f.subtract = 1;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0; 
                     break;
             }
         break;
 
-
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 
         case 0xC0:
             switch (opcode & 0x0F) {
