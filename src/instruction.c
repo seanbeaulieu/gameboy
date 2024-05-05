@@ -14,8 +14,8 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     // little or big endian??
                     // also when to read and write to bc and not just b and c?
                     // do not think i will need to write to bc
-                    cpu->registers.b = bus_read8(&cpu->bus, cpu->registers.pc++);
                     cpu->registers.c = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    cpu->registers.b = bus_read8(&cpu->bus, cpu->registers.pc++);
                     break;
                 // ld [bc]
                 case 0x2: 
@@ -117,8 +117,8 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     break;
                 // ld de
                 case 0x1:
-                    cpu->registers.d = bus_read8(&cpu->bus, cpu->registers.pc++);
                     cpu->registers.e = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    cpu->registers.d = bus_read8(&cpu->bus, cpu->registers.pc++);
                     break;
                 // ld [de], a
                 case 0x2:
@@ -221,8 +221,8 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     break;
                 // ld hl
                 case 0x1:
-                    cpu->registers.h = bus_read8(&cpu->bus, cpu->registers.pc++);
                     cpu->registers.l = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    cpu->registers.h = bus_read8(&cpu->bus, cpu->registers.pc++);
                     break;
                 // ld [hl+], a
                 case 0x2:
@@ -1101,7 +1101,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     break;
                 // and a, [hl]
                 case 0x6:
-                    cpu->registers.a = cpu->registers.a & bus_read8(&cpu->bus, cpu_read_register_16bit('hl'));
+                    cpu->registers.a = cpu->registers.a & bus_read8(&cpu->bus, cpu_read_register_16bit(&cpu->registers, 'hl'));
                     cpu->registers.f.zero = cpu->registers.a == 0x00;
                     cpu->registers.f.subtract = 0;
                     cpu->registers.f.half_carry = 1;
@@ -1164,7 +1164,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     break;
                 // xor a, [hl]
                 case 0xE: 
-                    cpu->registers.a = cpu->registers.a ^ bus_read8(&cpu->bus, cpu_read_register_16bit('hl'));
+                    cpu->registers.a = cpu->registers.a ^ bus_read8(&cpu->bus, cpu_read_register_16bit(&cpu->registers, 'hl'));
                     cpu->registers.f.zero = cpu->registers.a == 0x00;
                     cpu->registers.f.subtract = 0;
                     cpu->registers.f.half_carry = 0;
@@ -1236,7 +1236,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     break;
                 // or a, [hl]
                 case 0x6:  
-                    cpu->registers.a = cpu->registers.a | bus_read8(&cpu->bus, cpu_read_register_16bit('hl'));
+                    cpu->registers.a = cpu->registers.a | bus_read8(&cpu->bus, cpu_read_register_16bit(&cpu->registers, 'hl'));
                     cpu->registers.f.zero = cpu->registers.a == 0x00;
                     cpu->registers.f.subtract = 0;
                     cpu->registers.f.half_carry = 0;
@@ -1299,7 +1299,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     break;
                 // cp a, [hl]
                 case 0xE:  
-                    uint8_t n = bus_read8(&cpu->bus, cpu_read_register_16bit('hl'));
+                    uint8_t n = bus_read8(&cpu->bus, cpu_read_register_16bit(&cpu->registers, 'hl'));
                     uint16_t nn = cpu->registers.a - n; 
                     cpu->registers.f.zero = ((nn & 0xFF) == 0x00);
                     cpu->registers.f.subtract = 1;
@@ -1320,158 +1320,454 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
 
         case 0xC0:
             switch (opcode & 0x0F) {
+                // ret nz
                 case 0x0:  
+                    if (!cpu->registers.f.zero) {
+                        uint16_t nn = bus_read8(&cpu->bus, cpu->registers.sp++);
+                        nn |= bus_read8(&cpu->bus, cpu->registers.sp++) << 8;
+                        cpu->registers.pc = nn;
+                    }
                     break;
+                // pop bc
                 case 0x1:  
+                    cpu->registers.c = bus_read8(&cpu->bus, cpu->registers.sp++);
+                    cpu->registers.b = bus_read8(&cpu->bus, cpu->registers.sp++);
                     break;
+                // jp nz, a16
                 case 0x2:  
+                    uint16_t nn = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    nn |= bus_read8(&cpu->bus, cpu->registers.pc++) << 8;
+                    if (!cpu->registers.f.zero) {
+                        cpu->registers.pc = nn;
+                    }
                     break;
-                case 0x3:  
+                // jp imm
+                case 0x3:
+                    uint16_t nn = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    nn |= bus_read8(&cpu->bus, cpu->registers.pc++) << 8;
+                    cpu->registers.pc = nn;
                     break;
+                // call nz, imm
                 case 0x4:  
+                    uint16_t nn = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    nn |= bus_read8(&cpu->bus, cpu->registers.pc++) << 8;
+                    if (!cpu->registers.f.zero) {
+                        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+                        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
+                        cpu->registers.pc = nn;
+                    }
                     break;
-                case 0x5:  
+                // push bc
+                case 0x5: 
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.b);
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.c);
                     break;
+                // add a, n8
                 case 0x6:  
+                    uint8_t n = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    uint16_t nn = cpu->registers.a + n; 
+                    cpu->registers.f.zero = ((nn & 0xFF) == 0x00);
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = (cpu->registers.a ^ n ^ nn) & 0x10 ? 1 : 0;
+                    cpu->registers.f.carry = (nn & 0xFF00) ? 1 : 0; 
+                    cpu->registers.a = nn & 0xFF;
                     break;
+                // rst 0x0000
                 case 0x7:  
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
+                    cpu->registers.pc = 0x0000;
                     break;
+                // ret z 
                 case 0x8:  
+                    if (cpu->registers.f.zero) {
+                        uint16_t nn = bus_read8(&cpu->bus, cpu->registers.sp++);
+                        nn |= bus_read8(&cpu->bus, cpu->registers.sp++) << 8;
+                        cpu->registers.pc = nn;
+                    }
                     break;
-                case 0x9:  
+                // ret
+                case 0x9:
+                    uint16_t nn = bus_read8(&cpu->bus, cpu->registers.sp++);
+                    nn |= bus_read8(&cpu->bus, cpu->registers.sp++) << 8;  
+                    cpu->registers.pc = nn;
                     break;
-                case 0xA:  
+                // jp z, imm
+                case 0xA:
+                    uint16_t nn = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    nn |= bus_read8(&cpu->bus, cpu->registers.pc++) << 8;
+                    if (cpu->registers.f.zero) {
+                        cpu->registers.pc = nn;
+                    }
                     break;
                 
                 // prefix
                 case 0xB:  
+                    // EXECUTE PREFIX
                     break;
+
+                // call z, n8
                 case 0xC:  
+                    uint16_t nn = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    nn |= bus_read8(&cpu->bus, cpu->registers.pc++) << 8;
+                    if (cpu->registers.f.zero) {
+                        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+                        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF); 
+                        cpu->registers.pc = nn;
+                    }
                     break;
+                // call n8
                 case 0xD:  
+                    uint16_t nn = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    nn |= bus_read8(&cpu->bus, cpu->registers.pc++) << 8;
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF); 
+                    cpu->registers.pc = nn;
                     break;
+                // adc a, n8
                 case 0xE:  
+                    uint8_t n = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    uint16_t nn = cpu->registers.a + n + cpu->registers.f.carry; 
+                    cpu->registers.f.zero = ((nn & 0xFF) == 0x00);
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = (cpu->registers.a ^ n ^ nn) & 0x10 ? 1 : 0;
+                    cpu->registers.f.carry = (nn & 0xFF00) ? 1 : 0; 
+                    cpu->registers.a = nn & 0xFF;
                     break;
+                // rst 0x0008
                 case 0xF:  
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF); 
+                    cpu->registers.pc = 0x0008;
                     break;
             }
             break;
 
 
-
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         
         case 0xD0:
             switch (opcode & 0x0F) {
+                // ret nc
                 case 0x0:  
+                    if (!cpu->registers.f.carry) {
+                        uint16_t nn = bus_read8(&cpu->bus, cpu->registers.sp++);
+                        nn |= bus_read8(&cpu->bus, cpu->registers.sp++) << 8;
+                        cpu->registers.pc = nn;
+                    }
                     break;
+                // pop de
                 case 0x1:  
+                    cpu->registers.e = bus_read8(&cpu->bus, cpu->registers.sp++);
+                    cpu->registers.d = bus_read8(&cpu->bus, cpu->registers.sp++);
                     break;
+                // jp nc, a16
                 case 0x2:  
+                    uint16_t nn = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    nn |= bus_read8(&cpu->bus, cpu->registers.pc++) << 8;
+                    if (!cpu->registers.f.carry) {
+                        cpu->registers.pc = nn;
+                    }
                     break;
-                case 0x3:  
+                // na
+                case 0x3:
                     break;
+                // call nc, imm
                 case 0x4:  
+                    uint16_t nn = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    nn |= bus_read8(&cpu->bus, cpu->registers.pc++) << 8;
+                    if (!cpu->registers.f.carry) {
+                        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+                        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
+                        cpu->registers.pc = nn;
+                    }
                     break;
-                case 0x5:  
+                // push de
+                case 0x5: 
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.d);
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.e);
                     break;
+                // sub a, n8
                 case 0x6:  
+                    uint8_t n = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    uint16_t nn = cpu->registers.a - n; 
+                    cpu->registers.f.zero = ((nn & 0xFF) == 0x00);
+                    cpu->registers.f.subtract = 1;
+                    cpu->registers.f.half_carry = (cpu->registers.a ^ n ^ nn) & 0x10 ? 1 : 0;
+                    cpu->registers.f.carry = (nn & 0xFF00) ? 1 : 0; 
+                    cpu->registers.a = nn & 0xFF;
                     break;
+                // rst 0x0010
                 case 0x7:  
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
+                    cpu->registers.pc = 0x0010;
                     break;
+                // ret c
                 case 0x8:  
+                    if (cpu->registers.f.carry) {
+                        uint16_t nn = bus_read8(&cpu->bus, cpu->registers.sp++);
+                        nn |= bus_read8(&cpu->bus, cpu->registers.sp++) << 8;
+                        cpu->registers.pc = nn;
+                    }
                     break;
-                case 0x9:  
+
+
+                // reti (NOT FINISHED)
+                case 0x9:
+                    uint16_t nn = bus_read8(&cpu->bus, cpu->registers.sp++);
+                    nn |= bus_read8(&cpu->bus, cpu->registers.sp++) << 8;  
+                    cpu->registers.pc = nn;
+                    // gb_ime = 1;
                     break;
-                case 0xA:  
+
+
+                // jp c, imm
+                case 0xA:
+                    uint16_t nn = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    nn |= bus_read8(&cpu->bus, cpu->registers.pc++) << 8;
+                    if (cpu->registers.f.carry) {
+                        cpu->registers.pc = nn;
+                    }
                     break;
-                case 0xB:  
+                
+                // na
+                case 0xB: 
                     break;
+
+                // call c, n8
                 case 0xC:  
+                    uint16_t nn = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    nn |= bus_read8(&cpu->bus, cpu->registers.pc++) << 8;
+                    if (cpu->registers.f.carry) {
+                        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+                        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF); 
+                        cpu->registers.pc = nn;
+                    }
                     break;
+                // na
                 case 0xD:  
                     break;
+                // sbc a, n8
                 case 0xE:  
+                    uint8_t n = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    uint16_t nn = cpu->registers.a - n - cpu->registers.f.carry; 
+                    cpu->registers.f.zero = ((nn & 0xFF) == 0x00);
+                    cpu->registers.f.subtract = 1;
+                    cpu->registers.f.half_carry = (cpu->registers.a ^ n ^ nn) & 0x10 ? 1 : 0;
+                    cpu->registers.f.carry = (nn & 0xFF00) ? 1 : 0; 
+                    cpu->registers.a = nn & 0xFF;
                     break;
+                // rst 0x0018
                 case 0xF:  
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF); 
+                    cpu->registers.pc = 0x0018;
                     break;
             }
         break;
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         case 0xE0:
             switch (opcode & 0x0F) {
+                // ldh [a8], a
                 case 0x0:  
+                    bus_write8(&cpu->bus, 0xFF00 | bus_read8(&cpu->bus, cpu->registers.pc++), cpu->registers.a);
                     break;
-                case 0x1:  
+                // pop hl
+                case 0x1:
+                    cpu->registers.l = bus_read8(&cpu->bus, cpu->registers.sp++);
+                    cpu->registers.h = bus_read8(&cpu->bus, cpu->registers.sp++);
                     break;
+                // ld [c], a
                 case 0x2:  
+                    bus_write8(&cpu->bus, 0xFF00 | cpu->registers.c, cpu->registers.a);
                     break;
+                // na
                 case 0x3:  
                     break;
+                // na
                 case 0x4:  
                     break;
+                // push hl
                 case 0x5:  
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.h);
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.l); 
                     break;
-                case 0x6:  
+                // and n8
+                case 0x6: 
+                    cpu->registers.a = cpu->registers.a & bus_read8(&cpu->bus, cpu->registers.pc++); 
+                    cpu->registers.f.zero = (cpu->registers.a == 0x00);
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 1;
+                    cpu->registers.f.carry = 0;
                     break;
-                case 0x7:  
+                // rst 0x0020
+                case 0x7: 
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF); 
+                    cpu->registers.pc = 0x0020;
                     break;
+                // add sp, n8
                 case 0x8:  
+                    signed char sn = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    uint16_t nn = cpu->registers.sp + sn; 
+                    if (sn >= 0) {
+                        cpu->registers.f.zero = 0;
+                        cpu->registers.f.subtract = 0;
+                        cpu->registers.f.half_carry = ((cpu->registers.sp ^ sn ^ nn) & 0x1000) ? 1 : 0;
+                        cpu->registers.f.carry = (cpu->registers.sp > nn);
+                    }
+                    else {
+                        cpu->registers.f.zero = 0;
+                        cpu->registers.f.subtract = 0;
+                        cpu->registers.f.half_carry = ((cpu->registers.sp ^ sn ^ nn) & 0x1000) ? 1 : 0;
+                        cpu->registers.f.carry = (cpu->registers.sp < nn);
+                    }
+                    cpu->registers.sp = nn;
                     break;
+                // jp [hl]
                 case 0x9:  
+                    cpu->registers.pc = cpu->registers.hl;
                     break;
+                // ld [n8], a
                 case 0xA:  
+                    bus_write8(&cpu->bus, bus_read8(&cpu->bus, cpu->registers.pc++) | bus_read8(&cpu->bus, cpu->registers.pc++) << 8, cpu->registers.a);
                     break;
+                // na
                 case 0xB:  
                     break;
+                // na
                 case 0xC:  
                     break;
+                // na
                 case 0xD:  
                     break;
+                // xor n8
                 case 0xE:  
+                    cpu->registers.a = cpu->registers.a ^ bus_read8(&cpu->bus, cpu->registers.pc++); 
+                    cpu->registers.f.zero = (cpu->registers.a == 0x00);
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0;
                     break;
+                // rst 0x0028
                 case 0xF:  
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF); 
+                    cpu->registers.pc = 0x0028;
                     break;
             }
             break;
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         
         case 0xF0:
             switch (opcode & 0x0F) {
+                // ldh a, [a8]
                 case 0x0:  
+                    cpu->registers.a = bus_read8(&cpu->bus, (0xFF00 | bus_read8(&cpu->bus, cpu->registers.pc++)));
                     break;
-                case 0x1:  
+                // pop af
+                case 0x1:
+                    uint8_t n = bus_read8(&cpu->bus, cpu->registers.sp++);
+                    cpu->registers.f.zero = (n >> 7) & 1;
+                    cpu->registers.f.subtract = (n >> 6) & 1;
+                    cpu->registers.f.half_carry = (n >> 5) & 1;
+                    cpu->registers.f.carry = (n >> 4) & 1;
+                    cpu->registers.a = bus_read8(&cpu->bus, cpu->registers.sp++);
                     break;
+                // ld a, [c]
                 case 0x2:  
+                    cpu->registers.a = bus_read8(&cpu->bus, (0xFF00 | cpu->registers.c));
                     break;
+
+
+                // di
                 case 0x3:  
+                    // gb_ime = 0;
                     break;
+
+                
+                // na
                 case 0x4:  
                     break;
+                // push af
                 case 0x5:  
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.a);
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.f.zero << 7 | cpu->registers.f.subtract << 6 | cpu->registers.f.half_carry << 5 | cpu->registers.f.carry << 4); 
                     break;
-                case 0x6:  
+                // or n8
+                case 0x6: 
+                    cpu->registers.a = cpu->registers.a | bus_read8(&cpu->bus, cpu->registers.pc++); 
+                    cpu->registers.f.zero = (cpu->registers.a == 0x00);
+                    cpu->registers.f.subtract = 0;
+                    cpu->registers.f.half_carry = 0;
+                    cpu->registers.f.carry = 0;
                     break;
-                case 0x7:  
+                // rst 0x0030
+                case 0x7: 
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF); 
+                    cpu->registers.pc = 0x0030;
                     break;
+                // ld hl, sp +- n8
                 case 0x8:  
+                    signed char sn = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    uint16_t nn = cpu->registers.sp + sn; 
+                    if (sn >= 0) {
+                        cpu->registers.f.zero = 0;
+                        cpu->registers.f.subtract = 0;
+                        cpu->registers.f.half_carry = ((cpu->registers.sp ^ sn ^ nn) & 0x1000) ? 1 : 0;
+                        cpu->registers.f.carry = (cpu->registers.sp > nn);
+                    }
+                    else {
+                        cpu->registers.f.zero = 0;
+                        cpu->registers.f.subtract = 0;
+                        cpu->registers.f.half_carry = ((cpu->registers.sp ^ sn ^ nn) & 0x1000) ? 1 : 0;
+                        cpu->registers.f.carry = (cpu->registers.sp < nn);
+                    }
+                    cpu->registers.h = (nn & 0xFF00) >> 8;
+                    cpu->registers.l = (nn & 0x00FF);
                     break;
+                // ld sp, hl
                 case 0x9:  
+                    cpu->registers.sp = cpu->registers.hl;
                     break;
+                // ld a, [n8]
                 case 0xA:  
+                    cpu->registers.a = bus_read8(&cpu->bus, (bus_read8(&cpu->bus, cpu->registers.pc++) | bus_read8(&cpu->bus, cpu->registers.pc++) << 8));
                     break;
+
+
+                // ei 
                 case 0xB:  
+                    // gb_ime = 1;
                     break;
+
+
+                // na
                 case 0xC:  
                     break;
+                // na
                 case 0xD:  
                     break;
+                // xor n8
                 case 0xE:  
+                    uint8_t n = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    uint16_t nn = cpu->registers.a - n;
+                    cpu->registers.f.zero = ((nn & 0xFF) == 0x00);
+                    cpu->registers.f.subtract = 1;
+                    cpu->registers.f.half_carry = (cpu->registers.a ^ n ^ nn) & 0x10 ? 1 : 0;
+                    cpu->registers.f.carry = (nn & 0xFF00) ? 1 : 0;
                     break;
+                // rst 0x0038
                 case 0xF:  
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+                    bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF); 
+                    cpu->registers.pc = 0x0038;
                     break;
             }
         break;
