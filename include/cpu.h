@@ -9,6 +9,8 @@ typedef struct cpu {
     cpu_registers registers;
     bus bus;
     uint8_t counter;
+    bool ime; // interrupt
+    uint32_t count; // clock
 } cpu;
 
 typedef struct FlagsRegister {
@@ -42,6 +44,9 @@ void cpu_increment_register_16bit(cpu_registers *registers, const char *reg);
 void cpu_decrement_register_16bit(cpu_registers *registers, const char *reg);
 uint8_t flags_register_to_byte(FlagsRegister flags);
 FlagsRegister byte_to_flags_register(uint8_t byte);
+
+void cpu_handle_interrupts(cpu *cpu);
+void cpu_update_timers(cpu *cpu);
 
 void cpu_step(cpu *cpu);
 

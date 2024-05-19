@@ -27,6 +27,7 @@ uint16_t cpu_read_register_16bit(cpu_registers *registers, const char *reg) {
         return 0;
 }
 
+// might be irrelevant 
 void cpu_write_register_16bit(cpu_registers *registers, const char *reg, uint16_t value) {
     if (strcmp(reg, "af") == 0) {
         registers->a = (value >> 8) & 0xFF;
@@ -99,6 +100,105 @@ FlagsRegister byte_to_flags_register(uint8_t byte) {
     return flags;
 }
 
+// handle interrupts and timer 
+
+void cpu_handle_interrupts(cpu *cpu) {
+    uint8_t ie = bus_read_interrupt_register(&cpu->bus, 0xFFFF); // Interrupt Enable (IE)
+    uint8_t if_ = bus_read_interrupt_register(&cpu->bus, 0xFF0F); // Interrupt Flag (IF)
+    uint8_t requested = ie & if_;
+    
+    if (requested & 0x01) {  // Vblank
+        bus_write_interrupt_register(&cpu->bus, 0xFF0F, if_ & ~0x01); // Clear the corresponding IF bit
+        
+        // Push the current PC value to the stack
+        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
+        
+        // Set PC to the Vblank interrupt handler address
+        cpu->registers.pc = 0x0040;
+    } else if (requested & 0x02) {  // LCD Status
+        bus_write_interrupt_register(&cpu->bus, 0xFF0F, if_ & ~0x02); // Clear the corresponding IF bit
+        
+        // Push the current PC value to the stack
+        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
+        
+        // Set PC to the LCD Status interrupt handler address
+        cpu->registers.pc = 0x0048;
+    } else if (requested & 0x04) {  // Timer Overflow
+        bus_write_interrupt_register(&cpu->bus, 0xFF0F, if_ & ~0x04); // Clear the corresponding IF bit
+        
+        // Push the current PC value to the stack
+        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
+        
+        // Set PC to the Timer Overflow interrupt handler address
+        cpu->registers.pc = 0x0050;
+    } else if (requested & 0x08) {  // Serial Link
+        bus_write_interrupt_register(&cpu->bus, 0xFF0F, if_ & ~0x08); // Clear the corresponding IF bit
+        
+        // Push the current PC value to the stack
+        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
+        
+        // Set PC to the Serial Link interrupt handler address
+        cpu->registers.pc = 0x0058;
+    } else if (requested & 0x10) {  // Joypad Press
+        bus_write_interrupt_register(&cpu->bus, 0xFF0F, if_ & ~0x10); // Clear the corresponding IF bit
+        
+        // Push the current PC value to the stack
+        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
+        bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
+        
+        // Set PC to the Joypad Press interrupt handler address
+        cpu->registers.pc = 0x0060;
+    }
+}
+
+
+
+
+// update timers
+
+void cpu_update_timers(cpu *cpu) {
+    // Increment the DIV register at a fixed rate (16384 Hz)
+    if (cpu->count % 256 == 0) {
+        uint8_t div = bus_read_timer_register(&cpu->bus, 0xFF04);
+        bus_write_timer_register(&cpu->bus, 0xFF04, div + 1);
+    }
+
+    // Check if the timer is enabled (TAC bit 2)
+    uint8_t tac = bus_read_timer_register(&cpu->bus, 0xFF07);
+    if ((tac & 0x04) != 0) {
+        // Determine the timer frequency based on TAC bits 0-1
+        uint16_t freq = 4096; // Default frequency (4096 Hz)
+        switch (tac & 0x03) {
+            case 0x00: freq = 4096; break;
+            case 0x01: freq = 262144; break;
+            case 0x02: freq = 65536; break;
+            case 0x03: freq = 16384; break;
+        }
+
+        // Increment the TIMA register at the specified frequency
+        if (cpu->count % (4194304 / freq) == 0) {
+            uint8_t tima = bus_read_timer_register(&cpu->bus, 0xFF05);
+            tima++;
+            bus_write_timer_register(&cpu->bus, 0xFF05, tima);
+
+            // Check for TIMA overflow
+            if (tima == 0) {
+                // Set the timer interrupt flag
+                uint8_t if_ = bus_read_interrupt_register(&cpu->bus, 0xFF0F);
+                bus_write_interrupt_register(&cpu->bus, 0xFF0F, if_ | 0x04);
+
+                // Reset TIMA to the value in TMA
+                uint8_t tma = bus_read_timer_register(&cpu->bus, 0xFF06);
+                bus_write_timer_register(&cpu->bus, 0xFF05, tma);
+            }
+        }
+    }
+}
+
 // T-cycles for opcodes
 // from greg tourville
 
@@ -134,14 +234,29 @@ void cpu_step(cpu *cpu) {
     // convert to M cycles
     cpu->counter = op_tcycles[opcode] / 4;
 
+
+    // timers?
+
+
     // translate opcode into instruction
     // execute opcode
     instruction_execute(cpu, opcode);
 
     if (cpu->counter <= 0) {
         // interrupts, cyclic tasks
+        // handle interrupts here?
+        if (cpu->ime) {
+            cpu_handle_interrupts(cpu);
+            cpu->ime = false;
+        }
 
         // reset/increment cpu counter 
+        cpu->count += cpu->counter;
+        
+        // clock?
+        
+
+
         // if(ExitRequired) break;
 
     }

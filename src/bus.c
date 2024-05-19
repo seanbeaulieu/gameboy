@@ -28,3 +28,59 @@ uint8_t bus_read8(bus *bus, uint16_t address) {
 void bus_write8(bus *bus, uint16_t address, uint8_t value) {
     bus->memory[address] = value;
 }
+
+// interrupts and timer
+
+uint8_t bus_read_interrupt_register(bus *bus, uint16_t address) {
+    switch (address) {
+        case 0xFF0F: // Interrupt Flag (IF)
+            return bus->memory[0xFF0F];
+        case 0xFFFF: // Interrupt Enable (IE)
+            return bus->memory[0xFFFF];
+        default:
+            return 0;
+    }
+}
+
+void bus_write_interrupt_register(bus *bus, uint16_t address, uint8_t value) {
+    switch (address) {
+        case 0xFF0F: // Interrupt Flag (IF)
+            bus->memory[0xFF0F] = value;
+            break;
+        case 0xFFFF: // Interrupt Enable (IE)
+            bus->memory[0xFFFF] = value;
+            break;
+    }
+}
+
+uint8_t bus_read_timer_register(bus *bus, uint16_t address) {
+    switch (address) {
+        case 0xFF04: // DIV Register
+            return bus->memory[0xFF04];
+        case 0xFF05: // TIMA Register
+            return bus->memory[0xFF05];
+        case 0xFF06: // TMA Register
+            return bus->memory[0xFF06];
+        case 0xFF07: // TAC Register
+            return bus->memory[0xFF07];
+        default:
+            return 0;
+    }
+}
+
+void bus_write_timer_register(bus *bus, uint16_t address, uint8_t value) {
+    switch (address) {
+        case 0xFF04: // DIV Register
+            bus->memory[0xFF04] = 0; // Writing any value resets DIV to 0
+            break;
+        case 0xFF05: // TIMA Register
+            bus->memory[0xFF05] = value;
+            break;
+        case 0xFF06: // TMA Register
+            bus->memory[0xFF06] = value;
+            break;
+        case 0xFF07: // TAC Register
+            bus->memory[0xFF07] = value;
+            break;
+    }
+}
