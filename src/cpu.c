@@ -156,8 +156,6 @@ void cpu_handle_interrupts(cpu *cpu) {
 }
 
 
-
-
 // update timers
 
 void cpu_update_timers(cpu *cpu) {

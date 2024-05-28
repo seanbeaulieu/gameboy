@@ -1518,7 +1518,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     uint16_t nn = bus_read8(&cpu->bus, cpu->registers.sp++);
                     nn |= bus_read8(&cpu->bus, cpu->registers.sp++) << 8;  
                     cpu->registers.pc = nn;
-                    // gb_ime = 1;
+                    cpu->ime = 1;
                     break;
 
 
@@ -1687,7 +1687,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
 
                 // di
                 case 0x3:  
-                    // gb_ime = 0;
+                    cpu->ime = 0;
                     break;
 
                 
@@ -1744,7 +1744,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
 
                 // ei 
                 case 0xB:  
-                    // gb_ime = 1;
+                    cpu->ime = 1;
                     break;
 
 
