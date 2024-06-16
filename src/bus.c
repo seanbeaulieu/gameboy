@@ -1,5 +1,7 @@
 #include "../include/bus.h"
 #include <stdlib.h>
+#include <stdio.h>
+
 
 // 0x0000 - 0x3FFF : ROM Bank 0
 // 0x4000 - 0x7FFF : ROM Bank 1 - Switchable
@@ -83,4 +85,45 @@ void bus_write_timer_register(bus *bus, uint16_t address, uint8_t value) {
             bus->memory[0xFF07] = value;
             break;
     }
+}
+
+// load ROM memory
+
+int load_rom(bus *bus, const char *rom_path) {
+    FILE *file = fopen(rom_path, "rb");
+
+    // check if file exists
+    if (file == NULL) {
+        printf("Failed to open ROM file: %s\n", rom_path);
+        return -1;
+    }
+
+    // get the file size
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    rewind(file);
+
+    // allocate memory for the ROM data
+    uint8_t *rom_data = (uint8_t *)malloc(file_size);
+    if (rom_data == NULL) {
+        printf("Failed to allocate memory for ROM data\n");
+        fclose(file);
+        return -1;
+    }
+
+    // read the ROM data from the file
+    size_t bytes_read = fread(rom_data, 1, file_size, file);
+    if (bytes_read != file_size) {
+        printf("Failed to read ROM data from file\n");
+        free(rom_data);
+        fclose(file);
+        return -1;
+    }
+
+    // copy the ROM data to the appropriate memory locations in the bus
+    memcpy(bus->memory, rom_data, file_size);
+
+    free(rom_data);
+    fclose(file);
+    return 0;
 }

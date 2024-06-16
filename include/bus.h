@@ -15,5 +15,6 @@ uint8_t bus_read_interrupt_register(bus *bus, uint16_t address);
 void bus_write_interrupt_register(bus *bus, uint16_t address, uint8_t value);
 uint8_t bus_read_timer_register(bus *bus, uint16_t address);
 void bus_write_timer_register(bus *bus, uint16_t address, uint8_t value);
+int load_rom(bus *bus, const char *rom_path);
 
 #endif

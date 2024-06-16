@@ -5,14 +5,6 @@
 #include <stdbool.h>
 #include <bus.h>
 
-typedef struct cpu {
-    cpu_registers registers;
-    bus bus;
-    uint8_t counter;
-    bool ime; // interrupt
-    uint32_t count; // clock
-} cpu;
-
 typedef struct FlagsRegister {
     bool zero;
     bool subtract;
@@ -36,6 +28,15 @@ typedef struct cpu_registers {
     uint16_t pc;
     uint16_t sp;
 } cpu_registers;
+
+typedef struct cpu {
+    cpu_registers registers;
+    bus bus;
+    uint8_t counter;
+    bool ime; // interrupt
+    uint32_t count; // clock
+} cpu;
+
 
 void cpu_init(cpu_registers *registers);
 uint16_t cpu_read_register_16bit(cpu_registers *registers, const char *reg);

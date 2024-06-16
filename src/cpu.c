@@ -1,6 +1,8 @@
 #include "../include/cpu.h"
 #include "../include/bus.h"
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define ZERO_FLAG_BYTE_POSITION 7
 #define SUBTRACT_FLAG_BYTE_POSITION 6
@@ -235,6 +237,7 @@ void cpu_step(cpu *cpu) {
 
     // timers?
 
+    cpu_update_timers(cpu);
 
     // translate opcode into instruction
     // execute opcode
