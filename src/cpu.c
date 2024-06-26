@@ -225,43 +225,49 @@ uint8_t op_tcycles[0x100] = {
 // step function
 
 void cpu_step(cpu *cpu) {
-    // fetch the instruction byte at the current program counter
+    // Handle interrupts first
+    if (cpu->ime) {
+        cpu_handle_interrupts(cpu);
+    }
+
+    // Check if CPU is halted
+    if (cpu->halted) {
+        // While halted, only update timers and check for interrupts
+        cpu_update_timers(cpu);
+        
+        // Check if any enabled interrupt is pending
+        uint8_t ie = bus_read_interrupt_register(&cpu->bus, 0xFFFF); // Interrupt Enable
+        uint8_t if_ = bus_read_interrupt_register(&cpu->bus, 0xFF0F); // Interrupt Flag
+        if (ie & if_) {
+            // An enabled interrupt is pending, exit halt state
+            cpu->halted = 0;
+        } else {
+            // Still halted, don't execute an instruction
+            cpu->count++;  // Increment the total cycle count
+            return;
+        }
+    }
+
+    // Fetch the next instruction
     uint8_t opcode = bus_read8(&cpu->bus, cpu->registers.pc);
     
-    // figure out cycle counter
+    // Set the counter for this instruction
+    cpu->counter = op_tcycles[opcode] / 4;  // Convert T-cycles to M-cycles
 
-    // Counter-=Cycles[OpCode];
-    // convert to M cycles
-    cpu->counter = op_tcycles[opcode] / 4;
-
-
-    // timers?
-
-    cpu_update_timers(cpu);
-
-    // translate opcode into instruction
-    // execute opcode
+    // Execute the instruction
     instruction_execute(cpu, opcode);
 
-    if (cpu->counter <= 0) {
-        // interrupts, cyclic tasks
-        // handle interrupts here?
-        if (cpu->ime) {
-            cpu_handle_interrupts(cpu);
-            cpu->ime = false;
-        }
+    // Update timers
+    cpu_update_timers(cpu);
 
-        // reset/increment cpu counter 
-        cpu->count += cpu->counter;
-        
-        // clock?
-        
-
-
-        // if(ExitRequired) break;
-
+    // Increment the program counter (unless already done by the instruction)
+    if (opcode != 0xCB) {  // CB prefix instructions handle PC increment differently
+        cpu->registers.pc++;
     }
-    
-    // increment the program counter
-    cpu->registers.pc++;
+
+    // Update the total cycle count
+    cpu->count += cpu->counter;
+
+    // Reset the counter
+    cpu->counter = 0;
 }
