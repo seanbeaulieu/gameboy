@@ -18,7 +18,7 @@ void cpu_init(cpu_registers *registers) {
 // use switch here?
 uint16_t cpu_read_register_16bit(cpu_registers *registers, const char *reg) {
     if (strcmp(reg, "af") == 0)
-        return (uint16_t)((registers->a << 8) | flags_register_to_byte(byte_to_flags_register(&registers->f)));
+        return (uint16_t)((registers->a << 8) | flags_register_to_byte(registers->f));
     else if (strcmp(reg, "bc") == 0)
         return (uint16_t)((registers->b << 8) | registers->c);
     else if (strcmp(reg, "de") == 0)

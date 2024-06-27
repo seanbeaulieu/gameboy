@@ -31,6 +31,15 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
     bus->memory[address] = value;
 }
 
+uint16_t bus_read16(bus *bus, uint16_t address) {
+    return bus_read8(bus, address) | (bus_read8(bus, address + 1) << 8);
+}
+
+void bus_write16(bus *bus, uint16_t address, uint16_t value) {
+    bus_write8(bus, address, value & 0xFF);
+    bus_write8(bus, address + 1, value >> 8);
+}
+
 // interrupts and timer
 
 uint8_t bus_read_interrupt_register(bus *bus, uint16_t address) {

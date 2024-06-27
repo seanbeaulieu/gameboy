@@ -34,6 +34,7 @@ typedef struct cpu {
     bus bus;
     uint8_t counter;
     bool ime; // interrupt
+    uint8_t halted;
     uint32_t count; // clock
 } cpu;
 
