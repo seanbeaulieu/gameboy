@@ -167,16 +167,17 @@ void cpu_update_timers(cpu *cpu) {
         bus_write_timer_register(&cpu->bus, 0xFF04, div + 1);
     }
 
+    // this doesn't work?
     // Check if the timer is enabled (TAC bit 2)
     uint8_t tac = bus_read_timer_register(&cpu->bus, 0xFF07);
     if ((tac & 0x04) != 0) {
         // Determine the timer frequency based on TAC bits 0-1
         uint16_t freq = 4096; // Default frequency (4096 Hz)
         switch (tac & 0x03) {
-            case 0x00: freq = 4096; break;
-            case 0x01: freq = 262144; break;
-            case 0x02: freq = 65536; break;
-            case 0x03: freq = 16384; break;
+            case 0x00: freq = (uint16_t) 4096; break;
+            case 0x01: freq = (uint16_t) 262144; break;
+            case 0x02: freq = (uint16_t) 65536; break;
+            case 0x03: freq = (uint16_t) 16384; break;
         }
 
         // Increment the TIMA register at the specified frequency

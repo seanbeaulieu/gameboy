@@ -20,9 +20,10 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-
+    printf('before game loop');
     // game loop
     while (1) {
+        printf('before cpu step, in while');
         cpu_step(&gameboy);
 
         // etc
