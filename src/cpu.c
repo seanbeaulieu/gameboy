@@ -227,6 +227,15 @@ uint8_t op_tcycles[0x100] = {
 // step function
 
 void cpu_step(cpu *cpu) {
+
+    // print
+
+    /*
+    uint16_t old_pc1 = cpu->registers.pc;
+    uint8_t opcode1 = bus_read8(&cpu->bus, cpu->registers.pc);
+    printf("PC: 0x%04X, Opcode: 0x%02X\n", old_pc1, opcode1);
+    */
+   
     // Handle interrupts first
     if (cpu->ime) {
         cpu_handle_interrupts(cpu);
