@@ -18,9 +18,13 @@
 // 0xFF80 - 0xFFFE : Zero Page
 
 void bus_init(bus *bus) {
-    // allocate 64KB of memory
-    bus->memory = (uint8_t *)malloc(65536); 
-    // need to intialize other components
+    bus->memory = (uint8_t *)malloc(65536);
+    if (bus->memory == NULL) {
+        fprintf(stderr, "Failed to allocate memory for bus\n");
+        exit(1);
+    }
+    // initialize the memory to a known state
+    memset(bus->memory, 0, 65536);
 }
 
 uint8_t bus_read8(bus *bus, uint16_t address) {
@@ -111,6 +115,13 @@ int load_rom(bus *bus, const char *rom_path) {
     fseek(file, 0, SEEK_END);
     long file_size = ftell(file);
     rewind(file);
+
+    // check if the size is larger than 64kb
+    if (file_size > 65536) {
+        printf("ROM file is too large\n");
+        fclose(file);
+        return -1;
+    }
 
     // allocate memory for the ROM data
     uint8_t *rom_data = (uint8_t *)malloc(file_size);
