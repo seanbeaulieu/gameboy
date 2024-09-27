@@ -1,6 +1,7 @@
 #include "../include/bus.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 
 // 0x0000 - 0x3FFF : ROM Bank 0
@@ -25,6 +26,10 @@ void bus_init(bus *bus) {
     }
     // initialize the memory to a known state
     memset(bus->memory, 0, 65536);
+
+    // print check to see if memory properly intialized to load rom into
+    printf("Bus memory initialized. First byte: 0x%02X, Last byte: 0x%02X\n", 
+    bus->memory[0], bus->memory[65535]);
 }
 
 uint8_t bus_read8(bus *bus, uint16_t address) {
@@ -116,6 +121,9 @@ int load_rom(bus *bus, const char *rom_path) {
     long file_size = ftell(file);
     rewind(file);
 
+    // print the size of ROM
+    printf("ROM file size: %ld bytes\n", file_size);
+
     // check if the size is larger than 64kb
     if (file_size > 65536) {
         printf("ROM file is too large\n");
@@ -123,27 +131,25 @@ int load_rom(bus *bus, const char *rom_path) {
         return -1;
     }
 
-    // allocate memory for the ROM data
-    uint8_t *rom_data = (uint8_t *)malloc(file_size);
-    if (rom_data == NULL) {
-        printf("Failed to allocate memory for ROM data\n");
+    // read ROM direct into bus memory
+    size_t bytes_read = fread(bus->memory, 1, file_size, file);
+    if (bytes_read != (size_t)file_size) {
+        fprintf(stderr, "Failed to read ROM data. Read %zu bytes out of %ld\n", bytes_read, file_size);
         fclose(file);
         return -1;
     }
 
-    // read the ROM data from the file
-    size_t bytes_read = fread(rom_data, 1, file_size, file);
-    if (bytes_read != file_size) {
-        printf("Failed to read ROM data from file\n");
-        free(rom_data);
-        fclose(file);
-        return -1;
+    printf("ROM loaded successfully. First byte: 0x%02X, Last byte: 0x%02X\n", 
+           bus->memory[0], bus->memory[bytes_read - 1]);
+
+    // Print the first 16 bytes of the ROM
+    printf("First 16 bytes of ROM:\n");
+    for (int i = 0; i < 16 && i < file_size; i++) {
+        printf("%02X ", bus->memory[i]);
+        if ((i + 1) % 8 == 0) printf("\n");
     }
+    printf("\n");
 
-    // copy the ROM data to the appropriate memory locations in the bus
-    memcpy(bus->memory, rom_data, file_size);
-
-    free(rom_data);
     fclose(file);
     return 0;
 }
