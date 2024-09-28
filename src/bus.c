@@ -33,7 +33,10 @@ void bus_init(bus *bus) {
 }
 
 uint8_t bus_read8(bus *bus, uint16_t address) {
-    return bus->memory[address];
+    // return bus->memory[address];
+    uint8_t value = bus->memory[address];
+    printf("Reading from address 0x%04X: 0x%02X\n", address, value);
+    return value;
 }
 
 void bus_write8(bus *bus, uint16_t address, uint8_t value) {
@@ -133,6 +136,7 @@ int load_rom(bus *bus, const char *rom_path) {
 
     // read ROM direct into bus memory
     size_t bytes_read = fread(bus->memory, 1, file_size, file);
+    printf("bytes read %zu\n", bytes_read);
     if (bytes_read != (size_t)file_size) {
         fprintf(stderr, "Failed to read ROM data. Read %zu bytes out of %ld\n", bytes_read, file_size);
         fclose(file);
@@ -149,6 +153,11 @@ int load_rom(bus *bus, const char *rom_path) {
         if ((i + 1) % 8 == 0) printf("\n");
     }
     printf("\n");
+
+    printf("ROM Title: %.16s\n", &bus->memory[0x134]);
+    printf("Cartridge Type: 0x%02X\n", bus->memory[0x147]);
+    printf("ROM Size: 0x%02X\n", bus->memory[0x148]);
+    printf("RAM Size: 0x%02X\n", bus->memory[0x149]);
 
     fclose(file);
     return 0;

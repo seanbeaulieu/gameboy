@@ -8,6 +8,8 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
     int16_t sn;
     uint32_t result;
 
+     printf("Executing opcode: 0x%02X\n", opcode);
+
     switch (opcode & 0xF0) {
         case 0x00:
             switch (opcode & 0x0F) {

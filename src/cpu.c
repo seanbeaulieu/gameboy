@@ -261,6 +261,8 @@ void cpu_step(cpu *cpu) {
 
     // Fetch the next instruction
     uint8_t opcode = bus_read8(&cpu->bus, cpu->registers.pc);
+    printf("opcode in cpu_step: 0x%02X\n", opcode);
+    printf("pc: %d\n", cpu->registers.pc);
     
     // Set the counter for this instruction
     cpu->counter = op_tcycles[opcode] / 4;  // Convert T-cycles to M-cycles
