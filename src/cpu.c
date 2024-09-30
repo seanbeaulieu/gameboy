@@ -283,4 +283,5 @@ void cpu_step(cpu *cpu) {
 
     // Reset the counter
     cpu->counter = 0;
+
 }
