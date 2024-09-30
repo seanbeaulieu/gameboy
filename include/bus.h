@@ -2,6 +2,7 @@
 #define BUS_H
 
 #include <stdint.h>
+#include <stdio.h>
 
 typedef struct bus {
     uint8_t *memory;

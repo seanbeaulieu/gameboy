@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <bus.h>
+#include <stdio.h>
 
 typedef struct FlagsRegister {
     bool zero;

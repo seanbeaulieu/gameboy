@@ -18,9 +18,9 @@ int main(int argc, char *argv[]) {
 
     const char *rom_path = argv[1];
     if (load_rom(&gameboy.bus, rom_path) == 0) {
-        printf("First 10 opcodes:\n");
-        for (int i = 0; i < 30; i++) {
-            uint8_t opcode = bus_read8(&gameboy.bus, i);
+        printf("First 30 opcodes:\n");
+        for (int i = 0; i < 100; i++) {
+            uint8_t opcode = gameboy.bus.memory[i];
             printf("Address 0x%04X: 0x%02X\n", i, opcode);
         }
     } else {
