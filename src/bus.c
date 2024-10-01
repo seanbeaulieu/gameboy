@@ -43,6 +43,8 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
     bus->memory[address] = value;
 }
 
+
+// review this and any instructions that call it
 uint16_t bus_read16(bus *bus, uint16_t address) {
     return bus_read8(bus, address) | (bus_read8(bus, address + 1) << 8);
 }
