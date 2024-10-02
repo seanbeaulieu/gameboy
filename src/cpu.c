@@ -260,7 +260,7 @@ void cpu_step(cpu *cpu) {
     }
 
     // Fetch the next instruction
-    uint8_t opcode = bus_read8(&cpu->bus, cpu->registers.pc);
+    uint8_t opcode = bus_read8(&cpu->bus, cpu->registers.pc++);
     // printf("opcode in cpu_step: 0x%02X\n", opcode);
     // printf("pc: %d\n", cpu->registers.pc);
     
@@ -275,7 +275,7 @@ void cpu_step(cpu *cpu) {
 
     // Increment the program counter (unless already done by the instruction)
     if (opcode != 0xCB) {  // CB prefix instructions handle PC increment differently
-        cpu->registers.pc++;
+        // cpu->registers.pc++;
     }
 
     // Update the total cycle count

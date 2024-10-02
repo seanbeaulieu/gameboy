@@ -32,6 +32,14 @@ void bus_init(bus *bus) {
     bus->memory[0], bus->memory[65535]);
 }
 
+// free bus memory
+void bus_free(bus *bus) {
+    if (bus->memory != NULL) {
+        free(bus->memory);
+        bus->memory = NULL;
+    }
+}
+
 uint8_t bus_read8(bus *bus, uint16_t address) {
     // return bus->memory[address];
     uint8_t value = bus->memory[address];

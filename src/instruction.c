@@ -742,7 +742,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                 }
                 // JP a16
                 case 0x3: {
-                    cpu->registers.pc = bus_read16(&cpu->bus, cpu->registers.pc);
+                    cpu->registers.pc = bus_read16(&cpu->bus, cpu->registers.pc++);
                     break;
                 }
                 // CALL NZ, a16

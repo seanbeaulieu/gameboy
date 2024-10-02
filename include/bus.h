@@ -10,6 +10,7 @@ typedef struct bus {
 } bus;
 
 void bus_init(bus *bus);
+void bus_free(bus *bus);
 uint8_t bus_read8(bus *bus, uint16_t address);
 void bus_write8(bus *bus, uint16_t address, uint8_t value);
 uint16_t bus_read16(bus *bus, uint16_t address);
