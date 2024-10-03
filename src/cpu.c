@@ -16,6 +16,23 @@ void cpu_init(cpu_registers *registers) {
     memset(registers, 0, sizeof(cpu_registers));
 }
 
+// test init to set to boot rom at 0x100
+void cpu_init_test(cpu_registers *registers) {
+    registers->a = 0x01;
+    registers->f.zero = 1;
+    registers->f.subtract = 0;  
+    registers->f.half_carry = 1; 
+    registers->f.carry = 1;     
+    registers->b = 0x00;
+    registers->c = 0x13;
+    registers->d = 0x00;
+    registers->e = 0xD8;
+    registers->h = 0x01;
+    registers->l = 0x4D;
+    registers->sp = 0xFFFE;
+    registers->pc = 0x0100;
+}
+
 // use switch here?
 uint16_t cpu_read_register_16bit(cpu_registers *registers, const char *reg) {
     if (strcmp(reg, "af") == 0)

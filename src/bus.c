@@ -41,10 +41,13 @@ void bus_free(bus *bus) {
 }
 
 uint8_t bus_read8(bus *bus, uint16_t address) {
-    // return bus->memory[address];
-    uint8_t value = bus->memory[address];
-    // printf("Reading from address 0x%04X: 0x%02X\n", address, value);
-    return value;
+    // for testing
+    if (address == 0xFF44) {
+        return 0x90;  
+    }
+    
+    
+    return bus->memory[address];
 }
 
 void bus_write8(bus *bus, uint16_t address, uint8_t value) {

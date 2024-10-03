@@ -41,6 +41,7 @@ typedef struct cpu {
 
 
 void cpu_init(cpu_registers *registers);
+void cpu_init_test(cpu_registers *registers);
 uint16_t cpu_read_register_16bit(cpu_registers *registers, const char *reg);
 void cpu_write_register_16bit(cpu_registers *registers, const char *reg, uint16_t value);
 void cpu_increment_register_16bit(cpu_registers *registers, const char *reg);
