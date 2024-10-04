@@ -126,32 +126,25 @@ void bus_write_timer_register(bus *bus, uint16_t address, uint8_t value) {
 int load_rom(bus *bus, const char *rom_path) {
     FILE *file = fopen(rom_path, "rb");
 
-    // check if file exists
     if (file == NULL) {
         printf("Failed to open ROM file: %s\n", rom_path);
         return -1;
     }
 
-    // get the file size
     fseek(file, 0, SEEK_END);
     long file_size = ftell(file);
     rewind(file);
 
-    // print the size of ROM
     printf("ROM file size: %ld bytes\n", file_size);
 
-    // check if the size is larger than 64kb
-    if (file_size > 65536) {
-        printf("ROM file is too large\n");
-        fclose(file);
-        return -1;
-    }
+    // Determine how much of the ROM to load
+    size_t rom_size = (file_size > 0x8000) ? 0x8000 : file_size;
 
-    // read ROM direct into bus memory
-    size_t bytes_read = fread(bus->memory, 1, file_size, file);
-    printf("bytes read %zu\n", bytes_read);
-    if (bytes_read != (size_t)file_size) {
-        fprintf(stderr, "Failed to read ROM data. Read %zu bytes out of %ld\n", bytes_read, file_size);
+    // Read ROM into the correct memory region (0x0000 - 0x7FFF)
+    size_t bytes_read = fread(bus->memory, 1, rom_size, file);
+    
+    if (bytes_read != rom_size) {
+        fprintf(stderr, "Failed to read ROM data. Read %zu bytes out of %zu\n", bytes_read, rom_size);
         fclose(file);
         return -1;
     }
@@ -161,7 +154,7 @@ int load_rom(bus *bus, const char *rom_path) {
 
     // Print the first 16 bytes of the ROM
     printf("First 16 bytes of ROM:\n");
-    for (int i = 0; i < 16 && i < file_size; i++) {
+    for (int i = 0; i < 16 && i < rom_size; i++) {
         printf("%02X ", bus->memory[i]);
         if ((i + 1) % 8 == 0) printf("\n");
     }

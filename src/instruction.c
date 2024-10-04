@@ -288,7 +288,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     break;
                 // ld a, [hl+]
                 case 0xA:
-                    cpu->registers.a = bus_read8(&cpu->bus, cpu->registers.hl);
+                    cpu->registers.a = bus_read8(&cpu->bus, cpu_read_register_16bit(&cpu->registers, "hl"));
                     cpu_increment_register_16bit(&cpu->registers, "hl");
                     break;
                 // dec hl
@@ -350,7 +350,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     break;
                 // inc [hl]
                 case 0x4:
-                    n = bus_read8(&cpu->bus, cpu->registers.hl);
+                    n = bus_read8(&cpu->bus, cpu_read_register_16bit(&cpu->registers, "hl"));
                     n++;
                     bus_write8(&cpu->bus, cpu->registers.hl, n);
                     cpu->registers.f.zero = (n == 0x00);

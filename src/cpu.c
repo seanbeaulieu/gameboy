@@ -53,11 +53,14 @@ void cpu_write_register_16bit(cpu_registers *registers, const char *reg, uint16_
         registers->a = (value >> 8) & 0xFF;
         registers->f = byte_to_flags_register(value & 0xFF);
     } else if (strcmp(reg, "bc") == 0) {
-        registers->bc = value;
+        registers->b = (value >> 8) & 0xFF;
+        registers->c = value & 0xFF;
     } else if (strcmp(reg, "de") == 0) {
-        registers->de = value;
+        registers->d = (value >> 8) & 0xFF;
+        registers->e = value & 0xFF;
     } else if (strcmp(reg, "hl") == 0) {
-        registers->hl = value;
+        registers->h = (value >> 8) & 0xFF;
+        registers->l = value & 0xFF;
     } else if (strcmp(reg, "pc") == 0) {
         registers->pc = value;
     } else if (strcmp(reg, "sp") == 0) {
@@ -66,41 +69,15 @@ void cpu_write_register_16bit(cpu_registers *registers, const char *reg, uint16_
 }
 
 void cpu_increment_register_16bit(cpu_registers *registers, const char *reg) {
-    if (strcmp(reg, "bc") == 0) {
-        uint16_t nn = registers->bc + 1;
-        registers->bc = nn;
-        registers->b = nn >> 8;
-		registers->c = nn & 0xFF;
-    } else if (strcmp(reg, "de") == 0) {
-        uint16_t nn = registers->de + 1;
-        registers->de = nn;
-        registers->d = nn >> 8;
-		registers->e = nn & 0xFF;
-    } else if (strcmp(reg, "hl") == 0) {
-        uint16_t nn = registers->hl + 1;
-        registers->hl = nn;
-        registers->h = nn >> 8;
-		registers->l = nn & 0xFF;
-    }
+    uint16_t value = cpu_read_register_16bit(registers, reg);
+    value++;
+    cpu_write_register_16bit(registers, reg, value);
 }
 
 void cpu_decrement_register_16bit(cpu_registers *registers, const char *reg) {
-    if (strcmp(reg, "bc") == 0) {
-        uint16_t nn = registers->bc - 1;
-        registers->bc = nn;
-        registers->b = nn >> 8;
-		registers->c = nn & 0xFF;
-    } else if (strcmp(reg, "de") == 0) {
-        uint16_t nn = registers->de - 1;
-        registers->de = nn;
-        registers->d = nn >> 8;
-		registers->e = nn & 0xFF;
-    } else if (strcmp(reg, "hl") == 0) {
-        uint16_t nn = registers->hl - 1;
-        registers->hl = nn;
-        registers->h = nn >> 8;
-		registers->l = nn & 0xFF;
-    }
+    uint16_t value = cpu_read_register_16bit(registers, reg);
+    value--;
+    cpu_write_register_16bit(registers, reg, value);
 }
 
 uint8_t flags_register_to_byte(FlagsRegister flags) {
