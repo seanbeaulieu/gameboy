@@ -51,7 +51,40 @@ uint8_t bus_read8(bus *bus, uint16_t address) {
 }
 
 void bus_write8(bus *bus, uint16_t address, uint8_t value) {
-    bus->memory[address] = value;
+    if (address < 0x8000) {
+        // ROM - typically not writable
+        // Maybe handle bank switching here
+    } else if (address < 0xA000) {
+        // VRAM
+        bus->memory[address] = value;
+        // Maybe trigger some graphics update
+    } else if (address < 0xC000) {
+        // External RAM
+        printf("writing to WRAM");
+        bus->memory[address] = value;
+    } else if (address < 0xE000) {
+        // WRAM
+        bus->memory[address] = value;
+        // Mirror to Echo RAM
+        if (address < 0xDE00) {
+            bus->memory[address + 0x2000] = value;
+        }
+    } else if (address < 0xFE00) {
+        // Echo RAM - write to WRAM instead
+        bus->memory[address - 0x2000] = value;
+    } else if (address < 0xFEA0) {
+        // OAM
+        bus->memory[address] = value;
+        // Maybe trigger sprite update
+    } else if (address < 0xFF00) {
+        // Not usable
+    } else if (address < 0xFF80) {
+        // I/O Registers
+        // Handle special I/O behavior here
+    } else {
+        // High RAM (HRAM)
+        bus->memory[address] = value;
+    }
 }
 
 

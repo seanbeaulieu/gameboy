@@ -58,9 +58,9 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     break;
                 // ld [a16], sp
                 case 0x8:  
-                    nn = bus_read8(&cpu->bus, cpu->registers.pc++) | (bus_read8(&cpu->bus, cpu->registers.pc++) << 8); 
-                    bus_write8(&cpu->bus, nn, cpu->registers.sp & 0xFF);
-                    bus_write8(&cpu->bus, nn + 1, cpu->registers.sp >> 8);
+                    nn = bus_read16(&cpu->bus, cpu->registers.pc);
+                    cpu->registers.pc += 2;
+                    bus_write16(&cpu->bus, nn, cpu->registers.sp);
                     break;
                 // add hl, bc
                 case 0x9:
@@ -123,7 +123,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     break;
                 // ld [de], a
                 case 0x2:
-                    bus_write8(&cpu->bus, cpu->registers.de, cpu->registers.a);
+                    bus_write8(&cpu->bus, cpu_read_register_16bit(&cpu->registers, "de"), cpu->registers.a);
                     break;
                 // inc de
                 case 0x3:
@@ -225,7 +225,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     break;
                 // ld [hl+], a
                 case 0x2:
-                    bus_write8(&cpu->bus, cpu->registers.hl, cpu->registers.a);
+                    bus_write8(&cpu->bus, cpu_read_register_16bit(&cpu->registers, "hl"), cpu->registers.a);
                     cpu_increment_register_16bit(&cpu->registers, "hl");
                     break;
                 // inc hl
@@ -341,7 +341,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     break;
                 // ld [hl-], a
                 case 0x2:
-                    bus_write8(&cpu->bus, cpu->registers.hl, cpu->registers.a);
+                    bus_write8(&cpu->bus, cpu_read_register_16bit(&cpu->registers, "hl"), cpu->registers.a);
                     cpu_decrement_register_16bit(&cpu->registers, "hl");
                     break;
                 // inc sp
@@ -368,7 +368,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     break;
                 // ld [hl], n8
                 case 0x6:
-                    bus_write8(&cpu->bus, cpu->registers.hl, bus_read8(&cpu->bus, cpu->registers.pc++));
+                    bus_write8(&cpu->bus, cpu_read_register_16bit(&cpu->registers, "hl"), bus_read8(&cpu->bus, cpu->registers.pc++));
                     break;
                 // scf
                 case 0x7:
@@ -393,7 +393,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     break;
                 // ld a, [hl-]
                 case 0xA:
-                    cpu->registers.a = bus_read8(&cpu->bus, cpu->registers.hl);
+                    cpu->registers.a = bus_read8(&cpu->bus, cpu_read_register_16bit(&cpu->registers, "hl"));
                     cpu_decrement_register_16bit(&cpu->registers, "hl");
                     break;
                 // dec sp
@@ -790,8 +790,9 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                 }
                 // RET
                 case 0x9: {
-                    cpu->registers.pc = bus_read16(&cpu->bus, cpu->registers.sp);
-                    cpu->registers.sp += 2;
+                    uint16_t nn = bus_read8(&cpu->bus, cpu->registers.sp++);
+                    nn |= (uint16_t)bus_read8(&cpu->bus, cpu->registers.sp++) << 8;
+                    cpu->registers.pc = nn;
                     break;
                 }
                 // JP Z, a16
@@ -1119,12 +1120,12 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     cpu->registers.f.subtract = 0;
                     cpu->registers.f.half_carry = ((cpu->registers.sp & 0xF) + (sn & 0xF) > 0xF);
                     cpu->registers.f.carry = ((cpu->registers.sp & 0xFF) + (sn & 0xFF) > 0xFF);
-                    cpu->registers.hl = result & 0xFFFF;
+                    cpu_write_register_16bit(&cpu->registers, "hl", result & 0xFFFF);
                     break;
                 }
                 // LD SP, HL
                 case 0x9: {
-                    cpu->registers.sp = cpu->registers.hl;
+                    cpu->registers.sp = cpu_read_register_16bit(&cpu->registers, "hl");
                     break;
                 }
                 // LD A, (a16)
