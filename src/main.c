@@ -4,6 +4,7 @@
 #include <string.h>
 
 FILE *log_file = NULL;
+#define MAX_CYCLES 10000000
 
 void debug_print(cpu *gameboy) {
     fprintf(log_file, "A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X\n",
@@ -63,24 +64,45 @@ int main(int argc, char *argv[]) {
     // set pc to 0x100
     ////////////////////////////////
     gameboy.registers.pc = 0x100;
-    ////////////////////////////////
-    int index = 0;
-    while (index < 1258895) {
-        // printf("before cpu step, in while\n");
+
+    char serial_buffer[256] = {0};
+    int serial_buffer_pos = 0;
+    int cycles = 0;
+
+    while (cycles < MAX_CYCLES) {
         debug_print(&gameboy);
         cpu_step(&gameboy);
         
-        index++;
-        // etc
+        cycles++;
 
-        //uint8_t test1 = gameboy.bus.memory[0xFF02];
-        //printf("Value at 0xFF02 (SC): 0x%02X\n", test1);
-        // if (gameboy.bus.memory[0xff02] == 0x81) {
-        //     char c = gameboy.bus.memory[0xff01];
-        //     printf("%c", c);
-        //     gameboy.bus.memory[0xff02] = 0x0;
-        // }
+        // Check for serial output
+        if (gameboy.bus.memory[0xFF02] == 0x81) {
+            char c = gameboy.bus.memory[0xFF01];
+            printf("%c", c);
+            fflush(stdout); // Ensure the character is printed immediately
 
+            // Add to serial buffer
+            serial_buffer[serial_buffer_pos++] = c;
+            serial_buffer[serial_buffer_pos] = '\0';
+            
+            // Check if "Passed" is in the buffer
+            if (strstr(serial_buffer, "Passed") != NULL) {
+                printf("\nTest passed!\n");
+                break;
+            }
+
+            // Reset buffer if it gets too full
+            if (serial_buffer_pos >= 250) {
+                memmove(serial_buffer, serial_buffer + 125, 125);
+                serial_buffer_pos = 125;
+            }
+
+            gameboy.bus.memory[0xFF02] = 0x0;
+        }
+    }
+
+    if (cycles >= MAX_CYCLES) {
+        printf("\nEmulation stopped after %d cycles without completion.\n", MAX_CYCLES);
     }
     bus_free(&gameboy.bus);
     fclose(log_file);
