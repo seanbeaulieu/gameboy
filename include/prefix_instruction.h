@@ -10,5 +10,6 @@ typedef struct prefix_instruction {
 } orefix_instruction;
 
 void prefix_instruction_execute(cpu *cpu, uint8_t opcode);
+static uint8_t* get_register_pointer(cpu *cpu, uint8_t reg_index);
 
 #endif
