@@ -45,8 +45,6 @@ uint8_t bus_read8(bus *bus, uint16_t address) {
     if (address == 0xFF44) {
         return 0x90;  
     }
-    
-    
     return bus->memory[address];
 }
 
@@ -78,9 +76,15 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
         // Maybe trigger sprite update
     } else if (address < 0xFF00) {
         // Not usable
+        
     } else if (address < 0xFF80) {
         // I/O Registers
         // Handle special I/O behavior here
+        if (address == 0xFF01) {
+            printf("%c", value);
+        }
+        // printf("Address: 0x%04X\n", address);
+        // exit(1);
     } else {
         // High RAM (HRAM)
         bus->memory[address] = value;

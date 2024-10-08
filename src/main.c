@@ -66,16 +66,16 @@ int main(int argc, char *argv[]) {
     gameboy.registers.pc = 0x100;
     ////////////////////////////////
     int index = 0;
-    while (index < 1258895) {
+    while (index < 2000000) {
         // printf("before cpu step, in while\n");
-        debug_print(&gameboy);
+
+        // debug_print(&gameboy);
+
         cpu_step(&gameboy);
 
         index++;
         // etc
 
-        //uint8_t test1 = gameboy.bus.memory[0xFF02];
-        //printf("Value at 0xFF02 (SC): 0x%02X\n", test1);
         // if (gameboy.bus.memory[0xff02] == 0x81) {
         //     char c = gameboy.bus.memory[0xff01];
         //     printf("%c", c);
