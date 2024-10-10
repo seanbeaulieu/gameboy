@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
     gameboy.registers.pc = 0x100;
     ////////////////////////////////
     int index = 0;
-    while (index < 2000000) {
+    while (index < 7500000) {
         // printf("before cpu step, in while\n");
 
         // debug_print(&gameboy);

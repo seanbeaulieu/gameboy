@@ -47,7 +47,7 @@ uint16_t cpu_read_register_16bit(cpu_registers *registers, const char *reg) {
         return 0;
 }
 
-// might be irrelevant 
+// 16 bit write function
 void cpu_write_register_16bit(cpu_registers *registers, const char *reg, uint16_t value) {
     if (strcmp(reg, "af") == 0) {
         registers->a = (value >> 8) & 0xFF;
@@ -238,8 +238,8 @@ void cpu_step(cpu *cpu) {
     // Check if CPU is halted
     if (cpu->halted) {
         // While halted, only update timers and check for interrupts
+        printf("in cpu->halted is true");
         cpu_update_timers(cpu);
-        
         // Check if any enabled interrupt is pending
         uint8_t ie = bus_read_interrupt_register(&cpu->bus, 0xFFFF); // Interrupt Enable
         uint8_t if_ = bus_read_interrupt_register(&cpu->bus, 0xFF0F); // Interrupt Flag

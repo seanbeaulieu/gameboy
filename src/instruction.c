@@ -434,6 +434,12 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
         case 0x60:
         case 0x70:
             {
+                // halt goes first
+                if (opcode == 0x76) {
+                    cpu->halted = 1;
+                    break;
+                }
+
                 uint8_t src = opcode & 0x07;
                 uint8_t dst = (opcode >> 3) & 0x07;
                 uint8_t value;
@@ -460,12 +466,6 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     case 5: cpu->registers.l = value; break;
                     case 6: bus_write8(&cpu->bus, cpu_read_register_16bit(&cpu->registers, "hl"), value); break;
                     case 7: cpu->registers.a = value; break;
-                }
-
-                // Special case: HALT instruction
-                if (opcode == 0x76) {
-                    // Implement HALT functionality
-                    cpu->halted = 1;
                 }
             }
             break;
