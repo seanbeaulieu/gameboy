@@ -100,21 +100,21 @@ FlagsRegister byte_to_flags_register(uint8_t byte) {
 // handle interrupts and timer 
 
 void cpu_handle_interrupts(cpu *cpu) {
-    uint8_t ie = bus_read_interrupt_register(&cpu->bus, 0xFFFF); // Interrupt Enable (IE)
-    if (ie) {
-        // printf("ie is true ");
-    }
-    uint8_t if_ = bus_read_interrupt_register(&cpu->bus, 0xFF0F); // Interrupt Flag (IF)
-    if (if_) {
-        printf("if is true ");
-    }
+    uint8_t ie = bus_read8(&cpu->bus, 0xFFFF); // Interrupt Enable (IE)
+    // if (ie) {
+    //     // printf("ie is true ");
+    // }
+    uint8_t if_ = bus_read8(&cpu->bus, 0xFF0F); // Interrupt Flag (IF)
+    // if (if_) {
+    //     printf("if is true ");
+    // }
     uint8_t requested = ie & if_;
-    if (requested) {
-        printf("requested is true ");
-    }
+    // if (requested) {
+    //     printf("requested is true ");
+    // }
     
     if (requested & 0x01) {  // Vblank
-        bus_write_interrupt_register(&cpu->bus, 0xFF0F, if_ & ~0x01); // Clear the corresponding IF bit
+        bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x01); // Clear the corresponding IF bit
         
         // Push the current PC value to the stack
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
@@ -123,7 +123,7 @@ void cpu_handle_interrupts(cpu *cpu) {
         // Set PC to the Vblank interrupt handler address
         cpu->registers.pc = 0x0040;
     } else if (requested & 0x02) {  // LCD Status
-        bus_write_interrupt_register(&cpu->bus, 0xFF0F, if_ & ~0x02); // Clear the corresponding IF bit
+        bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x02); // Clear the corresponding IF bit
         
         // Push the current PC value to the stack
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
@@ -132,7 +132,7 @@ void cpu_handle_interrupts(cpu *cpu) {
         // Set PC to the LCD Status interrupt handler address
         cpu->registers.pc = 0x0048;
     } else if (requested & 0x04) {  // Timer Overflow
-        bus_write_interrupt_register(&cpu->bus, 0xFF0F, if_ & ~0x04); // Clear the corresponding IF bit
+        bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x04); // Clear the corresponding IF bit
         
         // Push the current PC value to the stack
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
@@ -141,7 +141,7 @@ void cpu_handle_interrupts(cpu *cpu) {
         // Set PC to the Timer Overflow interrupt handler address
         cpu->registers.pc = 0x0050;
     } else if (requested & 0x08) {  // Serial Link
-        bus_write_interrupt_register(&cpu->bus, 0xFF0F, if_ & ~0x08); // Clear the corresponding IF bit
+        bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x08); // Clear the corresponding IF bit
         
         // Push the current PC value to the stack
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
@@ -150,7 +150,7 @@ void cpu_handle_interrupts(cpu *cpu) {
         // Set PC to the Serial Link interrupt handler address
         cpu->registers.pc = 0x0058;
     } else if (requested & 0x10) {  // Joypad Press
-        bus_write_interrupt_register(&cpu->bus, 0xFF0F, if_ & ~0x10); // Clear the corresponding IF bit
+        bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x10); // Clear the corresponding IF bit
         
         // Push the current PC value to the stack
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
@@ -168,13 +168,12 @@ void cpu_update_timers(cpu *cpu) {
     // Increment the DIV register at a fixed rate (16384 Hz)
     if (cpu->count % 256 == 0) {
         // printf("div timer incremented ");
-        uint8_t div = bus_read_timer_register(&cpu->bus, 0xFF04);
-        bus_write_timer_register(&cpu->bus, 0xFF04, div + 1);
+        bus_increment_div(&cpu->bus);
     }
 
     // this doesn't work?
     // Check if the timer is enabled (TAC bit 2)
-    uint8_t tac = bus_read_timer_register(&cpu->bus, 0xFF07);
+    uint8_t tac = bus_read8(&cpu->bus, 0xFF07);
     // printf("tac & 0x04: %d\n", (tac & 0x04));
     if ((tac & 0x04) != 0) {
         // Determine the timer frequency based on TAC bits 0-1
@@ -193,27 +192,27 @@ void cpu_update_timers(cpu *cpu) {
             // 64 M-cycles, 11
             case 0x03: freq = (uint16_t) 16384; break;
         }
-        printf("in line 195");
+        // printf("in line 195");
         // increment the TIMA register at the specified frequency
         if (cpu->count % (4194304 / freq) == 0) {
-            uint8_t tima = bus_read_timer_register(&cpu->bus, 0xFF05);
-            printf("in line 199");
+            uint8_t tima = bus_read8(&cpu->bus, 0xFF05);
+            // printf("in line 199");
             // if tima is going to overflow, then we can trigger interrupt flags
-            // When the value overflows (exceeds $FF) it is reset to the value specified in TMA (FF06)
+            // when the value overflows (exceeds $FF) it is reset to the value specified in TMA (FF06)
             // interrupt requested as well
             if (tima == 255) {
                 printf("tima overflow");
                 // set the timer interrupt flag
-                uint8_t if_ = bus_read_interrupt_register(&cpu->bus, 0xFF0F);
-                bus_write_interrupt_register(&cpu->bus, 0xFF0F, if_ | 0x04);
+                uint8_t if_ = bus_read8(&cpu->bus, 0xFF0F);
+                bus_write8(&cpu->bus, 0xFF0F, if_ | 0x04);
 
                 // reset TIMA to the value in TMA
-                bus_write_timer_register(&cpu->bus, 0xFF05, bus_read_timer_register(&cpu->bus, 0xFF06));
+                bus_write8(&cpu->bus, 0xFF05, bus_read8(&cpu->bus, 0xFF06));
 
             } else {
-                // Normal increment
-                tima++;
-                bus_write_timer_register(&cpu->bus, 0xFF05, tima);
+                // normal increment
+                // tima++;
+                bus_write8(&cpu->bus, 0xFF05, tima++);
             }
         }
     }
@@ -266,8 +265,8 @@ void cpu_step(cpu *cpu) {
         printf("in cpu->halted is true");
         cpu_update_timers(cpu);
         // Check if any enabled interrupt is pending
-        uint8_t ie = bus_read_interrupt_register(&cpu->bus, 0xFFFF); // Interrupt Enable
-        uint8_t if_ = bus_read_interrupt_register(&cpu->bus, 0xFF0F); // Interrupt Flag
+        uint8_t ie = bus_read8(&cpu->bus, 0xFFFF); // Interrupt Enable
+        uint8_t if_ = bus_read8(&cpu->bus, 0xFF0F); // Interrupt Flag
         if (ie & if_) {
             // An enabled interrupt is pending, exit halt state
             cpu->halted = 0;

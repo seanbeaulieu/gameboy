@@ -79,20 +79,16 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
         
     } else if (address < 0xFF80) {
         // I/O Registers
-        // Handle special I/O behavior here
-        if (address == 0xFF01) {
-            printf("%c", value);
-        }
-        // printf("Address: 0x%04X\n", address);
-        // exit(1);
-
-        // writing any value to the DIV register resets it to $00
-        if (address == 0xFF04) {
-            bus->memory[address] = 0x00;
-        }
-
-        // write to TAC register
-        if (address == 0xFF07) {
+        if (address == 0xFF0F || address == 0xFFFF || (address >= 0xFF04 && address <= 0xFF07)) {
+            // interrupt and timer registers
+            // DIV register
+            if (address == 0xFF04) { 
+                 // writing any value resets DIV to 0
+                bus->memory[address] = 0;
+            } else {
+                bus->memory[address] = value;
+            }
+        } else {
             bus->memory[address] = value;
         }
     } else {
@@ -113,61 +109,65 @@ void bus_write16(bus *bus, uint16_t address, uint16_t value) {
 }
 
 // interrupts and timer
-
-uint8_t bus_read_interrupt_register(bus *bus, uint16_t address) {
-    switch (address) {
-        case 0xFF0F: // Interrupt Flag (IF)
-            return bus->memory[0xFF0F];
-        case 0xFFFF: // Interrupt Enable (IE)
-            return bus->memory[0xFFFF];
-        default:
-            return 0;
-    }
+// special to handle DIV increment outside of write 8
+void bus_increment_div(bus *bus) {
+    bus->memory[0xFF04]++;
 }
 
-void bus_write_interrupt_register(bus *bus, uint16_t address, uint8_t value) {
-    switch (address) {
-        case 0xFF0F: // Interrupt Flag (IF)
-            bus->memory[0xFF0F] = value;
-            break;
-        case 0xFFFF: // Interrupt Enable (IE)
-            bus->memory[0xFFFF] = value;
-            break;
-    }
-}
+// uint8_t bus_read_interrupt_register(bus *bus, uint16_t address) {
+//     switch (address) {
+//         case 0xFF0F: // Interrupt Flag (IF)
+//             return bus->memory[0xFF0F];
+//         case 0xFFFF: // Interrupt Enable (IE)
+//             return bus->memory[0xFFFF];
+//         default:
+//             return 0;
+//     }
+// }
+
+// void bus_write_interrupt_register(bus *bus, uint16_t address, uint8_t value) {
+//     switch (address) {
+//         case 0xFF0F: // Interrupt Flag (IF)
+//             bus->memory[0xFF0F] = value;
+//             break;
+//         case 0xFFFF: // Interrupt Enable (IE)
+//             bus->memory[0xFFFF] = value;
+//             break;
+//     }
+// }
 
 // unnecessary
-uint8_t bus_read_timer_register(bus *bus, uint16_t address) {
-    switch (address) {
-        case 0xFF04: // DIV Register
-            return bus->memory[0xFF04];
-        case 0xFF05: // TIMA Register
-            return bus->memory[0xFF05];
-        case 0xFF06: // TMA Register
-            return bus->memory[0xFF06];
-        case 0xFF07: // TAC Register
-            return bus->memory[0xFF07];
-        default:
-            return 0;
-    }
-}
+// uint8_t bus_read_timer_register(bus *bus, uint16_t address) {
+//     switch (address) {
+//         case 0xFF04: // DIV Register
+//             return bus->memory[0xFF04];
+//         case 0xFF05: // TIMA Register
+//             return bus->memory[0xFF05];
+//         case 0xFF06: // TMA Register
+//             return bus->memory[0xFF06];
+//         case 0xFF07: // TAC Register
+//             return bus->memory[0xFF07];
+//         default:
+//             return 0;
+//     }
+// }
 
-void bus_write_timer_register(bus *bus, uint16_t address, uint8_t value) {
-    switch (address) {
-        case 0xFF04: // DIV Register
-            bus->memory[0xFF04] = 0; // Writing any value resets DIV to 0
-            break;
-        case 0xFF05: // TIMA Register
-            bus->memory[0xFF05] = value;
-            break;
-        case 0xFF06: // TMA Register
-            bus->memory[0xFF06] = value;
-            break;
-        case 0xFF07: // TAC Register
-            bus->memory[0xFF07] = value;
-            break;
-    }
-}
+// void bus_write_timer_register(bus *bus, uint16_t address, uint8_t value) {
+//     switch (address) {
+//         case 0xFF04: // DIV Register
+//             bus->memory[0xFF04] = 0; // Writing any value resets DIV to 0
+//             break;
+//         case 0xFF05: // TIMA Register
+//             bus->memory[0xFF05] = value;
+//             break;
+//         case 0xFF06: // TMA Register
+//             bus->memory[0xFF06] = value;
+//             break;
+//         case 0xFF07: // TAC Register
+//             bus->memory[0xFF07] = value;
+//             break;
+//     }
+// }
 
 // load ROM memory
 
