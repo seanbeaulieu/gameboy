@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
     while (index < 7500000) {
         // printf("before cpu step, in while\n");
 
-        // debug_print(&gameboy);
+        debug_print(&gameboy);
 
         cpu_step(&gameboy);
 

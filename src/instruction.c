@@ -437,6 +437,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                 // halt goes first
                 if (opcode == 0x76) {
                     cpu->halted = 1;
+                    printf("halted called in instruction");
                     break;
                 }
 

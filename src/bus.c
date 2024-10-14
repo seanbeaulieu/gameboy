@@ -85,6 +85,16 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
         }
         // printf("Address: 0x%04X\n", address);
         // exit(1);
+
+        // writing any value to the DIV register resets it to $00
+        if (address == 0xFF04) {
+            bus->memory[address] = 0x00;
+        }
+
+        // write to TAC register
+        if (address == 0xFF07) {
+            bus->memory[address] = value;
+        }
     } else {
         // High RAM (HRAM)
         bus->memory[address] = value;
@@ -126,6 +136,7 @@ void bus_write_interrupt_register(bus *bus, uint16_t address, uint8_t value) {
     }
 }
 
+// unnecessary
 uint8_t bus_read_timer_register(bus *bus, uint16_t address) {
     switch (address) {
         case 0xFF04: // DIV Register
