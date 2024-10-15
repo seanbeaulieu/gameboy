@@ -172,48 +172,54 @@ void cpu_update_timers(cpu *cpu) {
     }
 
     // this doesn't work?
-    // Check if the timer is enabled (TAC bit 2)
+    // check if the timer is enabled (TAC bit 2)
     uint8_t tac = bus_read8(&cpu->bus, 0xFF07);
     // printf("tac & 0x04: %d\n", (tac & 0x04));
-    if ((tac & 0x04) != 0) {
-        // Determine the timer frequency based on TAC bits 0-1
-        uint16_t freq = 4096; // Default frequency (4096 Hz)
+    if (tac & 0x04) {
+        // determine the timer frequency based on TAC bits 0-1
+        // default frequency
+        uint16_t freq = 4096;
         switch (tac & 0x03) {
             // increment every 
             // 256 M-cycles, 00
-            case 0x00: freq = (uint16_t) 4096; break;
+            case 0x00: 
+                freq = (uint16_t) 4096; 
+                break;
 
             // 4 M-cycles, 01
-            case 0x01: freq = (uint16_t) 262144; break;
+            case 0x01: 
+                freq = (uint16_t) 262144; 
+                break;
 
             // 16 M-cycles, 10
-            case 0x02: freq = (uint16_t) 65536; break;
+            case 0x02: 
+                freq = (uint16_t) 65536; 
+                break;
 
             // 64 M-cycles, 11
-            case 0x03: freq = (uint16_t) 16384; break;
+            case 0x03: 
+                freq = (uint16_t) 16384; 
+                break;
         }
         // printf("in line 195");
         // increment the TIMA register at the specified frequency
         if (cpu->count % (4194304 / freq) == 0) {
             uint8_t tima = bus_read8(&cpu->bus, 0xFF05);
-            // printf("in line 199");
-            // if tima is going to overflow, then we can trigger interrupt flags
-            // when the value overflows (exceeds $FF) it is reset to the value specified in TMA (FF06)
-            // interrupt requested as well
-            if (tima == 255) {
+            tima++; // increment first
+            
+            // check for overflow after increment
+            if (tima == 0) { // if it wrapped around to 0
                 printf("tima overflow");
                 // set the timer interrupt flag
                 uint8_t if_ = bus_read8(&cpu->bus, 0xFF0F);
                 bus_write8(&cpu->bus, 0xFF0F, if_ | 0x04);
 
                 // reset TIMA to the value in TMA
-                bus_write8(&cpu->bus, 0xFF05, bus_read8(&cpu->bus, 0xFF06));
-
-            } else {
-                // normal increment
-                // tima++;
-                bus_write8(&cpu->bus, 0xFF05, tima++);
+                tima = bus_read8(&cpu->bus, 0xFF06);
             }
+            
+            // write the new value back to TIMA
+            bus_write8(&cpu->bus, 0xFF05, tima);
         }
     }
 }
@@ -287,6 +293,12 @@ void cpu_step(cpu *cpu) {
     // printf("counter: %d \n", cpu->counter);
     // Execute the instruction
     instruction_execute(cpu, opcode);
+
+    // Update the total cycle count
+    // cpu->count += cpu->counter;
+
+    // // Reset the counter
+    // cpu->counter = 0;
 
     // Update timers
     cpu_update_timers(cpu);

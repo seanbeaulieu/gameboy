@@ -925,7 +925,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                 case 0x9: {
                     cpu->registers.pc = bus_read16(&cpu->bus, cpu->registers.sp);
                     cpu->registers.sp += 2;
-                    cpu->ime = 1;  // Enable interrupts
+                    cpu->ime = 1;  // enable interrupts
                     break;
                 }
                 // JP C, a16

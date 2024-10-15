@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    printf("before game loop\n");
+    // printf("before game loop\n");
     // game loop
 
     // set pc to 0x100
@@ -66,10 +66,10 @@ int main(int argc, char *argv[]) {
     gameboy.registers.pc = 0x100;
     ////////////////////////////////
     int index = 0;
-    while (index < 1000000) {
+    while (index < 10000000) {
         // printf("before cpu step, in while\n");
 
-        debug_print(&gameboy);
+        // debug_print(&gameboy);
 
         cpu_step(&gameboy);
 

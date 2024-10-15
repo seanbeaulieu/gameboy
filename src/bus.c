@@ -79,6 +79,10 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
         
     } else if (address < 0xFF80) {
         // I/O Registers
+        if (address == 0xFF01) {
+            printf("%c", value);
+        }
+        
         if (address == 0xFF0F || address == 0xFFFF || (address >= 0xFF04 && address <= 0xFF07)) {
             // interrupt and timer registers
             // DIV register
@@ -201,17 +205,17 @@ int load_rom(bus *bus, const char *rom_path) {
            bus->memory[0], bus->memory[bytes_read - 1]);
 
     // Print the first 16 bytes of the ROM
-    printf("First 16 bytes of ROM:\n");
-    for (int i = 0; i < 16 && i < rom_size; i++) {
-        printf("%02X ", bus->memory[i]);
-        if ((i + 1) % 8 == 0) printf("\n");
-    }
-    printf("\n");
+    // printf("First 16 bytes of ROM:\n");
+    // for (int i = 0; i < 16 && i < rom_size; i++) {
+    //     printf("%02X ", bus->memory[i]);
+    //     if ((i + 1) % 8 == 0) printf("\n");
+    // }
+    // printf("\n");
 
-    printf("ROM Title: %.16s\n", &bus->memory[0x134]);
-    printf("Cartridge Type: 0x%02X\n", bus->memory[0x147]);
-    printf("ROM Size: 0x%02X\n", bus->memory[0x148]);
-    printf("RAM Size: 0x%02X\n", bus->memory[0x149]);
+    // printf("ROM Title: %.16s\n", &bus->memory[0x134]);
+    // printf("Cartridge Type: 0x%02X\n", bus->memory[0x147]);
+    // printf("ROM Size: 0x%02X\n", bus->memory[0x148]);
+    // printf("RAM Size: 0x%02X\n", bus->memory[0x149]);
 
     fclose(file);
     return 0;
