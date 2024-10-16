@@ -48,12 +48,9 @@ int main(int argc, char *argv[]) {
     const char *rom_path = argv[1];
     if (load_rom(&gameboy.bus, rom_path) == 0) {
         
-        // printf("First 30 opcodes:\n");
-        // for (int i = 0; i < 400; i++) {
-        //     uint8_t opcode = gameboy.bus.memory[i];
-        //     //printf("Address 0x%04X: 0x%02X\n", i, opcode);
-        // }
-    } else {
+    } 
+    
+    else {
         fprintf(stderr, "Failed to load ROM. Exiting.\n");
         return 1;
     }
@@ -75,12 +72,6 @@ int main(int argc, char *argv[]) {
 
         index++;
         // etc
-
-        // if (gameboy.bus.memory[0xff02] == 0x81) {
-        //     char c = gameboy.bus.memory[0xff01];
-        //     printf("%c", c);
-        //     gameboy.bus.memory[0xff02] = 0x0;
-        // }
 
     }
     bus_free(&gameboy.bus);

@@ -177,39 +177,20 @@ void cpu_update_timers(cpu *cpu) {
     // printf("tac & 0x04: %d\n", (tac & 0x04));
     if (tac & 0x04) {
         // determine the timer frequency based on TAC bits 0-1
-        // default frequency
-        uint16_t freq = 4096;
+        uint32_t cycles_per_increment;
         switch (tac & 0x03) {
-            // increment every 
-            // 256 M-cycles, 00
-            case 0x00: 
-                freq = (uint16_t) 4096; 
-                break;
-
-            // 4 M-cycles, 01
-            case 0x01: 
-                freq = (uint16_t) 262144; 
-                break;
-
-            // 16 M-cycles, 10
-            case 0x02: 
-                freq = (uint16_t) 65536; 
-                break;
-
-            // 64 M-cycles, 11
-            case 0x03: 
-                freq = (uint16_t) 16384; 
-                break;
+            case 0x00: cycles_per_increment = 1024; break; // 4096 Hz 
+            case 0x01: cycles_per_increment = 16; break;   // 262144 Hz 
+            case 0x02: cycles_per_increment = 64; break;   // 65536 Hz 
+            case 0x03: cycles_per_increment = 256; break;  // 16384 Hz 
         }
-        // printf("in line 195");
-        // increment the TIMA register at the specified frequency
-        if (cpu->count % (4194304 / freq) == 0) {
+        if (cpu->count % cycles_per_increment == 0) {
             uint8_t tima = bus_read8(&cpu->bus, 0xFF05);
             tima++; // increment first
-            
+            // printf("%d", tima);
             // check for overflow after increment
             if (tima == 0) { // if it wrapped around to 0
-                printf("tima overflow");
+                // printf("tima overflow");
                 // set the timer interrupt flag
                 uint8_t if_ = bus_read8(&cpu->bus, 0xFF0F);
                 bus_write8(&cpu->bus, 0xFF0F, if_ | 0x04);
@@ -250,14 +231,6 @@ uint8_t op_tcycles[0x100] = {
 // step function
 
 void cpu_step(cpu *cpu) {
-
-    // print
-
-    /*
-    uint16_t old_pc1 = cpu->registers.pc;
-    uint8_t opcode1 = bus_read8(&cpu->bus, cpu->registers.pc);
-    printf("PC: 0x%04X, Opcode: 0x%02X\n", old_pc1, opcode1);
-    */
    
     // Handle interrupts first
     if (cpu->ime) {
@@ -268,7 +241,7 @@ void cpu_step(cpu *cpu) {
     // Check if CPU is halted
     if (cpu->halted) {
         // While halted, only update timers and check for interrupts
-        printf("in cpu->halted is true");
+        // printf("in cpu->halted is true");
         cpu_update_timers(cpu);
         // Check if any enabled interrupt is pending
         uint8_t ie = bus_read8(&cpu->bus, 0xFFFF); // Interrupt Enable
@@ -285,28 +258,21 @@ void cpu_step(cpu *cpu) {
 
     // Fetch the next instruction
     uint8_t opcode = bus_read8(&cpu->bus, cpu->registers.pc++);
-    // printf("opcode in cpu_step: 0x%02X\n", opcode);
-    // printf("pc: %d\n", cpu->registers.pc);
     
     // Set the counter for this instruction
-    cpu->counter = op_tcycles[opcode] / 4;  // Convert T-cycles to M-cycles
+    cpu->counter = op_tcycles[opcode];  // do not convert T-cycles to M-cycles
     // printf("counter: %d \n", cpu->counter);
+
     // Execute the instruction
     instruction_execute(cpu, opcode);
-
-    // Update the total cycle count
-    // cpu->count += cpu->counter;
-
-    // // Reset the counter
-    // cpu->counter = 0;
 
     // Update timers
     cpu_update_timers(cpu);
 
-    // Increment the program counter (unless already done by the instruction)
-    if (opcode != 0xCB) {  // CB prefix instructions handle PC increment differently
-        // cpu->registers.pc++;
-    }
+    // // Increment the program counter (unless already done by the instruction)
+    // if (opcode != 0xCB) {  // CB prefix instructions handle PC increment differently
+    //     // cpu->registers.pc++;
+    // }
 
     // Update the total cycle count
     cpu->count += cpu->counter;

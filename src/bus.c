@@ -28,8 +28,8 @@ void bus_init(bus *bus) {
     memset(bus->memory, 0, 65536);
 
     // print check to see if memory properly intialized to load rom into
-    printf("Bus memory initialized. First byte: 0x%02X, Last byte: 0x%02X\n", 
-    bus->memory[0], bus->memory[65535]);
+    // printf("Bus memory initialized. First byte: 0x%02X, Last byte: 0x%02X\n", 
+    // bus->memory[0], bus->memory[65535]);
 }
 
 // free bus memory
@@ -58,7 +58,7 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
         // Maybe trigger some graphics update
     } else if (address < 0xC000) {
         // External RAM
-        printf("writing to WRAM");
+        // printf("writing to WRAM");
         bus->memory[address] = value;
     } else if (address < 0xE000) {
         // WRAM
@@ -117,61 +117,6 @@ void bus_write16(bus *bus, uint16_t address, uint16_t value) {
 void bus_increment_div(bus *bus) {
     bus->memory[0xFF04]++;
 }
-
-// uint8_t bus_read_interrupt_register(bus *bus, uint16_t address) {
-//     switch (address) {
-//         case 0xFF0F: // Interrupt Flag (IF)
-//             return bus->memory[0xFF0F];
-//         case 0xFFFF: // Interrupt Enable (IE)
-//             return bus->memory[0xFFFF];
-//         default:
-//             return 0;
-//     }
-// }
-
-// void bus_write_interrupt_register(bus *bus, uint16_t address, uint8_t value) {
-//     switch (address) {
-//         case 0xFF0F: // Interrupt Flag (IF)
-//             bus->memory[0xFF0F] = value;
-//             break;
-//         case 0xFFFF: // Interrupt Enable (IE)
-//             bus->memory[0xFFFF] = value;
-//             break;
-//     }
-// }
-
-// unnecessary
-// uint8_t bus_read_timer_register(bus *bus, uint16_t address) {
-//     switch (address) {
-//         case 0xFF04: // DIV Register
-//             return bus->memory[0xFF04];
-//         case 0xFF05: // TIMA Register
-//             return bus->memory[0xFF05];
-//         case 0xFF06: // TMA Register
-//             return bus->memory[0xFF06];
-//         case 0xFF07: // TAC Register
-//             return bus->memory[0xFF07];
-//         default:
-//             return 0;
-//     }
-// }
-
-// void bus_write_timer_register(bus *bus, uint16_t address, uint8_t value) {
-//     switch (address) {
-//         case 0xFF04: // DIV Register
-//             bus->memory[0xFF04] = 0; // Writing any value resets DIV to 0
-//             break;
-//         case 0xFF05: // TIMA Register
-//             bus->memory[0xFF05] = value;
-//             break;
-//         case 0xFF06: // TMA Register
-//             bus->memory[0xFF06] = value;
-//             break;
-//         case 0xFF07: // TAC Register
-//             bus->memory[0xFF07] = value;
-//             break;
-//     }
-// }
 
 // load ROM memory
 
