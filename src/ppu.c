@@ -5,6 +5,55 @@
 
 #include "../include/cpu.h"
 #include "../include/bus.h"
+#include "../include/ppu.h"
+
+// ppu modes
+#define MODE_HBLANK 0
+#define MODE_VBLANK 1
+#define MODE_OAM_SCAN 2
+#define MODE_DRAWING 3
+
+// screen dimensions
+#define SCREEN_WIDTH 160
+#define SCREEN_HEIGHT 144
+#define MAX_SPRITES_PER_LINE 10
+
+// memory regions
+#define VRAM_START 0x8000
+#define VRAM_END 0x97FF
+#define OAM_START 0xFE00
+#define OAM_END 0xFE9F
+
+// registers
+#define LCDC 0xFF40 // lcd control
+#define STAT 0xFF41 // lcd status
+#define SCY  0xFF42 // scroll y
+#define SCX  0xFF43 // scroll x
+#define LY   0xFF44 // current scanline
+#define LYC  0xFF45 // scanline compare
+#define WY   0xFF4A // window y position
+#define WX   0xFF4B // window x position minus 7
+#define BGP  0xFF47 // bg palette data
+#define OBP0 0xFF48 // obj palette 0 data
+#define OBP1 0xFF49 // obj palette 1 data
+
+// lcd control bit flags
+#define LCDC_ENABLE      (1 << 7)
+#define LCDC_WINDOW_MAP  (1 << 6)
+#define LCDC_WINDOW_ON   (1 << 5)
+#define LCDC_TILE_SEL    (1 << 4)
+#define LCDC_BG_MAP      (1 << 3)
+#define LCDC_OBJ_SIZE    (1 << 2)
+#define LCDC_OBJ_ON      (1 << 1)
+#define LCDC_BG_ON       (1 << 0)
+
+// stat bit flags
+#define STAT_LYC_INT     (1 << 6)
+#define STAT_OAM_INT     (1 << 5)
+#define STAT_VBLANK_INT  (1 << 4)
+#define STAT_HBLANK_INT  (1 << 3)
+#define STAT_LYC_EQUAL   (1 << 2)
+#define STAT_MODE_MASK   0x03
 
 // the screen is a 160x144 pixel LCD made up of 8x8 tiles
 
@@ -104,3 +153,163 @@
 // longer period at the end of every frame
 // - takes 456 t-cycles
 // - 154 scanlines take place for each frame, so v-blank happens once every 154 scanline reps
+
+// implement ppu as a finite-state machine
+// ppu step
+
+void ppu_init(ppu *ppu, bus *bus) {
+    ppu->bus = bus;
+    ppu->vram = &bus->memory[VRAM_START];
+    ppu->oam = &bus->memory[OAM_START];
+    
+    ppu->mode = MODE_OAM_SCAN;
+    ppu->current_ly = 0;
+    ppu->dot_counter = 0;
+    ppu->sprite_count = 0;
+    ppu->stat_irq_blocked = 0;
+    
+    memset(ppu->screen_buffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
+}
+
+uint8_t ppu_read_register(ppu *ppu, uint16_t address) {
+    switch(address) {
+        case LCDC:
+            return bus_read8(ppu->bus, LCDC);
+            
+        case STAT: {
+            uint8_t stat = bus_read8(ppu->bus, STAT);
+            // bit 7 is unused and always returns 1
+            return (stat | 0x80) & 0xFC | ppu->mode;
+        }
+            
+        case LY:
+            return ppu->current_ly;
+            
+        case LYC:
+            return bus_read8(ppu->bus, LYC);
+            
+        default:
+            return bus_read8(ppu->bus, address);
+    }
+}
+
+void ppu_write_register(ppu *ppu, uint16_t address, uint8_t value) {
+    switch(address) {
+        case LCDC:
+            bus_write8(ppu->bus, LCDC, value);
+            // if lcd is being disabled
+            if (!(value & LCDC_ENABLE)) {
+                ppu->mode = MODE_HBLANK;
+                ppu->current_ly = 0;
+                ppu->dot_counter = 0;
+                // clear screen buffer
+                memset(ppu->screen_buffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
+            }
+            break;
+            
+        case STAT:
+            
+            bus_write8(ppu->bus, STAT, (value & 0x78) | (bus_read8(ppu->bus, STAT) & 0x07) | 0x80);
+            
+            break;
+            
+        case LYC:
+            bus_write8(ppu->bus, LYC, value);
+            ppu_check_lyc(ppu);
+            break;
+            
+        default:
+            bus_write8(ppu->bus, address, value);
+            break;
+    }
+}
+
+void ppu_check_lyc(ppu *ppu) {
+    uint8_t stat = bus_read8(ppu->bus, STAT);
+    uint8_t lyc = bus_read8(ppu->bus, LYC);
+    
+    if (ppu->current_ly == lyc) {
+        stat |= STAT_LYC_EQUAL;
+        if (stat & STAT_LYC_INT && !ppu->stat_irq_blocked) {
+            // trigger STAT interrupt
+            uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
+            bus_write8(ppu->bus, 0xFF0F, if_reg | 0x02);
+            ppu->stat_irq_blocked = 1;
+        }
+    } else {
+        stat &= ~STAT_LYC_EQUAL;
+        ppu->stat_irq_blocked = 0;
+    }
+    
+    bus_write8(ppu->bus, STAT, stat);
+}
+
+void ppu_check_stat_interrupt(ppu *ppu) {
+    uint8_t stat = bus_read8(ppu->bus, STAT);
+    uint8_t request = 0;
+    
+    // check each stat interrupt condition
+    switch(ppu->mode) {
+        case MODE_HBLANK:
+            request = (stat & STAT_HBLANK_INT);
+            break;
+        case MODE_VBLANK:
+            request = (stat & STAT_VBLANK_INT);
+            break;
+        case MODE_OAM_SCAN:
+            request = (stat & STAT_OAM_INT);
+            break;
+    }
+    
+    // if lyc=ly is enabled and matches, that's another condition
+    if ((stat & STAT_LYC_INT) && (stat & STAT_LYC_EQUAL)) {
+        request = 1;
+    }
+    
+    // if any condition is met and interrupts aren't blocked
+    if (request && !ppu->stat_irq_blocked) {
+        uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
+        bus_write8(ppu->bus, 0xFF0F, if_reg | 0x02);
+        ppu->stat_irq_blocked = 1;
+    } else if (!request) {
+        ppu->stat_irq_blocked = 0;
+    }
+}
+
+void ppu_update_stat(ppu *ppu) {
+    uint8_t stat = bus_read8(ppu->bus, STAT);
+    // clear mode bits (0-1) and set new mode
+    stat = (stat & 0xFC) | ppu->mode;
+    // update coincidence flag (bit 2) based on LY=LYC comparison
+    if (ppu->current_ly == bus_read8(ppu->bus, LYC)) {
+        stat |= (1 << 2);
+    } else {
+        stat &= ~(1 << 2);
+    }
+    bus_write8(ppu->bus, STAT, stat);
+}
+
+void ppu_step(ppu *ppu) {
+    
+    // check if lcd is enabled
+    if (!(bus_read8(ppu->bus, LCDC) & LCDC_ENABLE)) {
+        return;
+    }
+
+    ppu->dot_counter++;
+
+    switch(ppu->mode) {
+        case MODE_OAM_SCAN:
+            break;
+
+        case MODE_DRAWING:
+            break;
+
+        case MODE_HBLANK:
+            break;
+
+        case MODE_VBLANK:
+            break;
+            
+    }
+}
