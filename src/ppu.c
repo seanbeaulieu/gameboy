@@ -171,27 +171,27 @@ void ppu_init(ppu *ppu, bus *bus) {
     memset(ppu->screen_buffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
 }
 
-uint8_t ppu_read_register(ppu *ppu, uint16_t address) {
-    switch(address) {
-        case LCDC:
-            return bus_read8(ppu->bus, LCDC);
+// uint8_t ppu_read_register(ppu *ppu, uint16_t address) {
+//     switch(address) {
+//         case LCDC:
+//             return bus_read8(ppu->bus, LCDC);
             
-        case STAT: {
-            uint8_t stat = bus_read8(ppu->bus, STAT);
-            // bit 7 is unused and always returns 1
-            return (stat | 0x80) & 0xFC | ppu->mode;
-        }
+//         case STAT: {
+//             uint8_t stat = bus_read8(ppu->bus, STAT);
+//             // bit 7 is unused and always returns 1
+//             return (stat | 0x80) & 0xFC | ppu->mode;
+//         }
             
-        case LY:
-            return ppu->current_ly;
+//         case LY:
+//             return ppu->current_ly;
             
-        case LYC:
-            return bus_read8(ppu->bus, LYC);
+//         case LYC:
+//             return bus_read8(ppu->bus, LYC);
             
-        default:
-            return bus_read8(ppu->bus, address);
-    }
-}
+//         default:
+//             return bus_read8(ppu->bus, address);
+//     }
+// }
 
 void ppu_write_register(ppu *ppu, uint16_t address, uint8_t value) {
     switch(address) {
@@ -289,6 +289,83 @@ void ppu_update_stat(ppu *ppu) {
     bus_write8(ppu->bus, STAT, stat);
 }
 
+// ppu mode functions
+
+// OAM scan (mode 2):
+// - entered at the start of every scanline, except for V-Blank before pixels are drawn to the screen
+// - ppu searches for sprites that should be rendered on the current scanline and stores them in a buffer
+// total of 80 t-cycles, meaning that the ppu checks a new OAM entry every 2 t-cycles
+// - a sprite is only added to the buffer if all of these conditions apply:
+// - sprite x position must be > 0
+// - LY + 16 must be >= sprite y position
+// - LY + 16 must be < sprite y position + the sprite height 
+// - the amount of sprites stored in the OAM buffer must be less than 10
+
+void ppu_oam_scan(ppu *ppu) {
+    uint8_t lcdc = bus_read8(ppu->bus, LCDC);
+    uint8_t sprite_height = (lcdc & LCDC_OBJ_SIZE) ? 16 : 8;
+    
+    // reset sprite count for new scanline
+    ppu->sprite_count = 0;
+    
+    // perform oam scan if sprites are enabled
+    if (lcdc & LCDC_OBJ_ON) {
+        // scan all 40 sprites in oam
+        for (int i = 0; i < 40 && ppu->sprite_count < MAX_SPRITES_PER_LINE; i++) {
+            // each sprite uses 4 bytes in oam
+            uint16_t sprite_addr = OAM_START + (i * 4);
+            
+            // read sprite attributes
+            uint8_t y_pos = ppu->oam[i * 4];
+            uint8_t x_pos = ppu->oam[i * 4 + 1];
+            uint8_t tile_num = ppu->oam[i * 4 + 2];
+            uint8_t flags = ppu->oam[i * 4 + 3];
+            
+            // check if sprite is on current scanline
+            int16_t sprite_row = (ppu->current_ly + 16) - y_pos;
+            
+            if (x_pos > 0 && sprite_row >= 0 && sprite_row < sprite_height) {
+                
+                // add sprite to buffer
+                sprite_data *sprite = &ppu->sprite_buffer[ppu->sprite_count];
+                sprite->y_pos = y_pos;
+                sprite->x_pos = x_pos;
+                sprite->tile_num = tile_num;
+                sprite->flags = flags;
+                sprite->index = i;
+                
+                ppu->sprite_count++;
+            }
+        }
+    }
+}
+
+// drawing (mode 3):
+// - this mode is where the ppu 'draws' pixels on the screen
+// - duration depends on multiple variables
+
+void ppu_draw(ppu *ppu) {
+
+}
+
+// h-blank (mode 0):
+// - this mode takes up the remainder of the scanline after the drawing mode 3 wraps up
+// - essentially pads the duration of the scanline to 456 t-cycles, pausing the ppu 
+
+// void ppu_hblank(ppu *ppu) {
+//     ppu->dot_counter++;
+// }
+
+// v-blank (mode 1):
+// - same as h-blank except instead of taking place at the end of every scanline, it's a much
+// longer period at the end of every frame
+// - takes 456 t-cycles
+// - 154 scanlines take place for each frame, so v-blank happens once every 154 scanline reps
+
+void ppu_vblank(ppu *ppu) {
+    
+}
+
 void ppu_step(ppu *ppu) {
     
     // check if lcd is enabled
@@ -300,16 +377,31 @@ void ppu_step(ppu *ppu) {
 
     switch(ppu->mode) {
         case MODE_OAM_SCAN:
+            // entered at the start of every scanline
+            if (ppu->dot_counter == 1) { 
+                ppu_oam_scan(ppu);
+            }
+            // total of 80 t-cycles 
+            if (ppu->dot_counter >= 80) { 
+                ppu->mode = MODE_DRAWING;
+                ppu->dot_counter = 0;
+                ppu_update_stat(ppu);
+                ppu_check_stat_interrupt(ppu);
+            }
+
             break;
 
         case MODE_DRAWING:
             break;
 
         case MODE_HBLANK:
+            while (ppu->dot_counter < 456) {
+                ppu->dot_counter++;
+            }
             break;
 
         case MODE_VBLANK:
             break;
             
-    }
+    
 }
