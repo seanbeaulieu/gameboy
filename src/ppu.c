@@ -609,4 +609,6 @@ void ppu_step(ppu *ppu) {
             break;
             
     
+    }
+
 }

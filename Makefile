@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99 -g -fsanitize=address -fno-omit-frame-pointer
-LDFLAGS = -fsanitize=address
+CFLAGS = -Wall -Wextra -std=c99 -g -fsanitize=address -fno-omit-frame-pointer $(shell sdl2-config --cflags)
+LDFLAGS = -fsanitize=address $(shell sdl2-config --libs)
 
 SRCS = src/main.c src/bus.c src/cpu.c src/instruction.c src/prefix_instruction.c src/ppu.c
 OBJS = $(SRCS:.c=.o)
@@ -13,7 +13,7 @@ TARGET = gameboy-emulator
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $@
+	$(CC) $(OBJS) -o $@ $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
