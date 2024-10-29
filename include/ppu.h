@@ -21,7 +21,7 @@ typedef struct {
 } sprite_data;
 
 typedef struct {
-    uint8_t screen_buffer[23040];
+    // uint8_t screen_buffer[23040];
 
     uint8_t mode;
     uint8_t current_ly;
@@ -32,6 +32,9 @@ typedef struct {
     sprite_data sprite_buffer[MAX_SPRITES_PER_LINE];  // buffer for current scanline sprites
 
     uint8_t screen_buffer[SCREEN_WIDTH * SCREEN_HEIGHT];
+
+    // callback
+    void (*frame_complete_callback)(uint8_t *buffer);
 
     uint8_t *vram;
     uint8_t *oam;
@@ -47,11 +50,11 @@ void ppu_step(ppu *ppu);
 // uint8_t ppu_read_register(ppu *ppu, uint16_t address);
 void ppu_write_register(ppu *ppu, uint16_t address, uint8_t value);
 
-// function for each ppu mode
+// functions for ppu modes
 void ppu_oam_scan(ppu *ppu);
 void ppu_draw(ppu *ppu);
-void ppu_hblank(ppu *ppu);
-void ppu_vblank(ppu *ppu);
+// void ppu_hblank(ppu *ppu);
+// void ppu_vblank(ppu *ppu);
 
 // interrupts
 void ppu_check_lyc(ppu *ppu);

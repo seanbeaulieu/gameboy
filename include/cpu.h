@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <bus.h>
+#include <ppu.h>
 #include <stdio.h>
 
 typedef struct FlagsRegister {
@@ -33,6 +34,7 @@ typedef struct cpu_registers {
 typedef struct cpu {
     cpu_registers registers;
     bus bus;
+    ppu ppu;
     uint8_t counter;
     bool ime; // interrupt
     uint8_t halted;

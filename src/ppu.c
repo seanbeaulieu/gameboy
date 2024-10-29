@@ -167,6 +167,7 @@ void ppu_init(ppu *ppu, bus *bus) {
     ppu->dot_counter = 0;
     ppu->sprite_count = 0;
     ppu->stat_irq_blocked = 0;
+    ppu->frame_complete_callback = NULL;
     
     memset(ppu->screen_buffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
 }
@@ -192,6 +193,11 @@ void ppu_init(ppu *ppu, bus *bus) {
 //             return bus_read8(ppu->bus, address);
 //     }
 // }
+
+// set callback
+void ppu_set_frame_callback(ppu *ppu, void (*callback)(uint8_t *buffer)) {
+    ppu->frame_complete_callback = callback;
+}
 
 void ppu_write_register(ppu *ppu, uint16_t address, uint8_t value) {
     switch(address) {
@@ -343,18 +349,167 @@ void ppu_oam_scan(ppu *ppu) {
 // drawing (mode 3):
 // - this mode is where the ppu 'draws' pixels on the screen
 // - duration depends on multiple variables
+// - actually writes to screen buffer 
 
-void ppu_draw(ppu *ppu) {
-
+void ppu_render_scanline(ppu *ppu) {
+    uint8_t lcdc = bus_read8(ppu->bus, LCDC);
+    uint8_t *scanline = &ppu->screen_buffer[ppu->current_ly * SCREEN_WIDTH];
+    
+    // if background is enabled
+    if (lcdc & LCDC_BG_ON) {
+        uint8_t scy = bus_read8(ppu->bus, SCY);
+        uint8_t scx = bus_read8(ppu->bus, SCX);
+        uint16_t bg_map = (lcdc & LCDC_BG_MAP) ? 0x9C00 : 0x9800;
+        
+        // calculate y position in background map
+        uint8_t y = (ppu->current_ly + scy) & 0xFF;
+        uint8_t tile_y = y >> 3;  // divide by 8
+        uint8_t fine_y = y & 7;   // y % 8
+        
+        // render each pixel in the scanline
+        for (int x = 0; x < SCREEN_WIDTH; x++) {
+            uint8_t mapped_x = (x + scx) & 0xFF;
+            uint8_t tile_x = mapped_x >> 3;
+            uint8_t fine_x = mapped_x & 7;
+            
+            // get tile number from background map
+            uint16_t tile_addr = bg_map + (tile_y * 32) + tile_x;
+            uint8_t tile_num = ppu->vram[tile_addr - VRAM_START];
+            
+            // get tile data address
+            uint16_t tile_data;
+            if (lcdc & LCDC_TILE_SEL) {
+                tile_data = 0x8000 + (tile_num * 16);
+            } else {
+                tile_data = 0x9000 + ((int8_t)tile_num * 16);
+            }
+            
+            // get the two bytes for this line of the tile
+            uint8_t byte1 = ppu->vram[(tile_data + (fine_y * 2)) - VRAM_START];
+            uint8_t byte2 = ppu->vram[(tile_data + (fine_y * 2) + 1) - VRAM_START];
+            
+            // combine bits for color
+            uint8_t bit = 7 - fine_x;
+            uint8_t color = ((byte1 >> bit) & 1) | (((byte2 >> bit) & 1) << 1);
+            
+            // apply background palette
+            uint8_t bgp = bus_read8(ppu->bus, BGP);
+            color = (bgp >> (color * 2)) & 3;
+            
+            scanline[x] = color;
+        }
+    }
+    
+    // render window if enabled
+    if ((lcdc & LCDC_WINDOW_ON) && (lcdc & LCDC_ENABLE)) {
+        uint8_t wy = bus_read8(ppu->bus, WY);
+        uint8_t wx = bus_read8(ppu->bus, WX) - 7;
+        
+        if (ppu->current_ly >= wy) {
+            // similar to background rendering but for window
+            if ((lcdc & LCDC_WINDOW_ON) && (lcdc & LCDC_ENABLE)) {
+                uint8_t wy = bus_read8(ppu->bus, WY);
+                uint8_t wx = bus_read8(ppu->bus, WX) - 7;
+                
+                if (ppu->current_ly >= wy) {
+                    // calculate which line of the window we're drawing
+                    uint8_t window_y = ppu->current_ly - wy;
+                    uint8_t tile_y = window_y >> 3;    // divide by 8
+                    uint8_t fine_y = window_y & 7;     // y % 8
+                    
+                    // get window tile map address
+                    uint16_t window_map = (lcdc & LCDC_WINDOW_MAP) ? 0x9C00 : 0x9800;
+                    
+                    // render window pixels for this scanline
+                    for (int x = 0; x < SCREEN_WIDTH - wx; x++) {
+                        int screen_x = wx + x;
+                        
+                        // only draw if we're within screen bounds
+                        if (screen_x >= 0 && screen_x < SCREEN_WIDTH) {
+                            uint8_t tile_x = x >> 3;
+                            uint8_t fine_x = x & 7;
+                            
+                            // get tile number from window map
+                            uint16_t tile_addr = window_map + (tile_y * 32) + tile_x;
+                            uint8_t tile_num = ppu->vram[tile_addr - VRAM_START];
+                            
+                            // get tile data address (same addressing modes as background)
+                            uint16_t tile_data;
+                            if (lcdc & LCDC_TILE_SEL) {
+                                tile_data = 0x8000 + (tile_num * 16);
+                            } else {
+                                tile_data = 0x9000 + ((int8_t)tile_num * 16);
+                            }
+                            
+                            // get the two bytes for this line of the tile
+                            uint8_t byte1 = ppu->vram[(tile_data + (fine_y * 2)) - VRAM_START];
+                            uint8_t byte2 = ppu->vram[(tile_data + (fine_y * 2) + 1) - VRAM_START];
+                            
+                            // combine bits for color
+                            uint8_t bit = 7 - fine_x;
+                            uint8_t color = ((byte1 >> bit) & 1) | (((byte2 >> bit) & 1) << 1);
+                            
+                            // apply background palette (window uses same palette as background)
+                            uint8_t bgp = bus_read8(ppu->bus, BGP);
+                            color = (bgp >> (color * 2)) & 3;
+                            
+                            // write to screen buffer
+                            ppu->screen_buffer[ppu->current_ly * SCREEN_WIDTH + screen_x] = color;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // render sprites if enabled
+    if (lcdc & LCDC_OBJ_ON) {
+        // render sprites from buffer in reverse order
+        for (int i = ppu->sprite_count - 1; i >= 0; i--) {
+            sprite_data *sprite = &ppu->sprite_buffer[i];
+            
+            // calculate vertical line being drawn on sprite
+            int16_t line = ppu->current_ly - (sprite->y_pos - 16);
+            
+            // if sprite is vertically flipped
+            if (sprite->flags & 0x40) {
+                line = ((lcdc & LCDC_OBJ_SIZE) ? 15 : 7) - line;
+            }
+            
+            // get tile data address
+            uint16_t tile_addr = 0x8000 + (sprite->tile_num * 16) + (line * 2);
+            
+            // get tile data
+            uint8_t byte1 = ppu->vram[tile_addr - VRAM_START];
+            uint8_t byte2 = ppu->vram[(tile_addr + 1) - VRAM_START];
+            
+            // draw all pixels for this line of the sprite
+            for (int x = 0; x < 8; x++) {
+                int pixel_x = sprite->x_pos - 8 + x;
+                
+                if (pixel_x >= 0 && pixel_x < SCREEN_WIDTH) {
+                    uint8_t bit = sprite->flags & 0x20 ? x : 7 - x;
+                    uint8_t color = ((byte1 >> bit) & 1) | (((byte2 >> bit) & 1) << 1);
+                    
+                    if (color > 0) {  // color 0 is transparent
+                        // apply sprite palette
+                        uint8_t palette = bus_read8(ppu->bus, sprite->flags & 0x10 ? OBP1 : OBP0);
+                        color = (palette >> (color * 2)) & 3;
+                        
+                        // check sprite priority
+                        if (!(sprite->flags & 0x80) || scanline[pixel_x] == 0) {
+                            scanline[pixel_x] = color;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 // h-blank (mode 0):
 // - this mode takes up the remainder of the scanline after the drawing mode 3 wraps up
 // - essentially pads the duration of the scanline to 456 t-cycles, pausing the ppu 
-
-// void ppu_hblank(ppu *ppu) {
-//     ppu->dot_counter++;
-// }
 
 // v-blank (mode 1):
 // - same as h-blank except instead of taking place at the end of every scanline, it's a much
@@ -362,9 +517,6 @@ void ppu_draw(ppu *ppu) {
 // - takes 456 t-cycles
 // - 154 scanlines take place for each frame, so v-blank happens once every 154 scanline reps
 
-void ppu_vblank(ppu *ppu) {
-    
-}
 
 void ppu_step(ppu *ppu) {
     
@@ -392,15 +544,68 @@ void ppu_step(ppu *ppu) {
             break;
 
         case MODE_DRAWING:
+            // drawing mode takes ~172-289 cycles depending on sprites
+            if (ppu->dot_counter >= 172) {
+                // complete current scanline drawing
+                ppu_render_scanline(ppu);
+                
+                // move to hblank
+                ppu->mode = MODE_HBLANK;
+                ppu->dot_counter = 0;
+                ppu_update_stat(ppu);
+                ppu_check_stat_interrupt(ppu);
+            }
             break;
 
         case MODE_HBLANK:
-            while (ppu->dot_counter < 456) {
-                ppu->dot_counter++;
+            // remaining time to complete scanline
+            if (ppu->dot_counter >= 456 - (80 + 172)) {
+                ppu->current_ly++;
+                ppu->dot_counter = 0;
+                
+                if (ppu->current_ly == 144) {
+                    // enter vblank when we hit scanline 144
+                    ppu->mode = MODE_VBLANK;
+                    // request vblank interrupt
+                    uint8_t int_flag = bus_read8(ppu->bus, 0xFF0F);
+                    bus_write8(ppu->bus, 0xFF0F, int_flag | 0x01);
+                } else {
+                    // start next scanline with oam scan
+                    ppu->mode = MODE_OAM_SCAN;
+                }
+                
+                ppu_update_stat(ppu);
+                ppu_check_stat_interrupt(ppu);
+                ppu_check_lyc(ppu);
             }
             break;
 
         case MODE_VBLANK:
+            if (ppu->dot_counter >= 456) {
+                ppu->dot_counter = 0;
+                ppu->current_ly++;
+
+                // check if vblank is finished
+                if (ppu->current_ly >= 154) {
+                    // notify display that frame is ready before clearing buffer
+                    if (ppu->frame_complete_callback != NULL) {
+                        ppu->frame_complete_callback(ppu->screen_buffer);
+                    }
+                    
+                    ppu->current_ly = 0;
+                    ppu->mode = MODE_OAM_SCAN;
+                    // clear screen buffer for next frame
+                    memset(ppu->screen_buffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
+                    ppu_update_stat(ppu);
+                    ppu_check_stat_interrupt(ppu);
+                } else {
+                    ppu_check_lyc(ppu);
+                }
+            } else if (ppu->dot_counter == 1) {
+                // trigger vblank interrupt on first dot
+                uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
+                bus_write8(ppu->bus, 0xFF0F, if_reg | 0x01);
+            }
             break;
             
     
