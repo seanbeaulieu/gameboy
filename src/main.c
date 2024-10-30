@@ -139,6 +139,9 @@ int main(int argc, char *argv[]) {
     cpu_init(&gameboy.registers);
     cpu_init_test(&gameboy.registers);
     bus_init(&gameboy.bus);
+    // set up PPU frame callback
+    ppu_set_frame_callback(&PPU, display_frame);
+    printf("callback set: %s\n", PPU.frame_complete_callback != NULL ? "yes" : "no");
     ppu_init(&PPU, &gameboy.bus);
 
     // // open log file
@@ -150,7 +153,7 @@ int main(int argc, char *argv[]) {
 
     // load rom 
     if (argc < 2) {
-        printf("Please provide the path to the ROM file.\n");
+        printf("please provide the path to the ROM file.\n");
         return 1;
     }
 
@@ -160,7 +163,7 @@ int main(int argc, char *argv[]) {
     } 
     
     else {
-        fprintf(stderr, "Failed to load ROM. Exiting.\n");
+        fprintf(stderr, "failed to load ROM. exiting.\n");
         return 1;
     }
 
@@ -181,33 +184,30 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // set up PPU frame callback
-    ppu_set_frame_callback(&gameboy.ppu, display_frame);
-
     // game loop
     SDL_Event event;
     int running = 1;
 
-    uint8_t test_buffer[SCREEN_WIDTH * SCREEN_HEIGHT];
-    for(int y = 0; y < SCREEN_HEIGHT; y++) {
-        for(int x = 0; x < SCREEN_WIDTH; x++) {
-            // create a pattern with all 4 gameboy colors
-            if (x < SCREEN_WIDTH/2) {
-                if (y < SCREEN_HEIGHT/2) {
-                    test_buffer[y * SCREEN_WIDTH + x] = 0; // white
-                } else {
-                    test_buffer[y * SCREEN_WIDTH + x] = 1; // light gray
-                }
-            } else {
-                if (y < SCREEN_HEIGHT/2) {
-                    test_buffer[y * SCREEN_WIDTH + x] = 2; // dark gray
-                } else {
-                    test_buffer[y * SCREEN_WIDTH + x] = 3; // black
-                }
-            }
-        }
-    }
-    display_frame(test_buffer);
+    // uint8_t test_buffer[SCREEN_WIDTH * SCREEN_HEIGHT];
+    // for(int y = 0; y < SCREEN_HEIGHT; y++) {
+    //     for(int x = 0; x < SCREEN_WIDTH; x++) {
+    //         // create a pattern with all 4 gameboy colors
+    //         if (x < SCREEN_WIDTH/2) {
+    //             if (y < SCREEN_HEIGHT/2) {
+    //                 test_buffer[y * SCREEN_WIDTH + x] = 0; // white
+    //             } else {
+    //                 test_buffer[y * SCREEN_WIDTH + x] = 1; // light gray
+    //             }
+    //         } else {
+    //             if (y < SCREEN_HEIGHT/2) {
+    //                 test_buffer[y * SCREEN_WIDTH + x] = 2; // dark gray
+    //             } else {
+    //                 test_buffer[y * SCREEN_WIDTH + x] = 3; // black
+    //             }
+    //         }
+    //     }
+    // }
+    // display_frame(test_buffer);
 
 
     while (running) {

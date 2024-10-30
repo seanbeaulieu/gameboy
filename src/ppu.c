@@ -167,9 +167,11 @@ void ppu_init(ppu *ppu, bus *bus) {
     ppu->dot_counter = 0;
     ppu->sprite_count = 0;
     ppu->stat_irq_blocked = 0;
-    ppu->frame_complete_callback = NULL;
+    
     
     memset(ppu->screen_buffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
+
+    printf("PPU init end - callback ptr: %p\n", (void*)ppu->frame_complete_callback);
 }
 
 // uint8_t ppu_read_register(ppu *ppu, uint16_t address) {
@@ -196,7 +198,10 @@ void ppu_init(ppu *ppu, bus *bus) {
 
 // set callback
 void ppu_set_frame_callback(ppu *ppu, void (*callback)(uint8_t *buffer)) {
+    printf("Setting callback - old ptr: %p, new ptr: %p\n", 
+           (void*)ppu->frame_complete_callback, (void*)callback);
     ppu->frame_complete_callback = callback;
+    printf("Callback set - current ptr: %p\n", (void*)ppu->frame_complete_callback);
 }
 
 void ppu_write_register(ppu *ppu, uint16_t address, uint8_t value) {
@@ -531,6 +536,7 @@ void ppu_step(ppu *ppu) {
         case MODE_OAM_SCAN:
             // entered at the start of every scanline
             if (ppu->dot_counter == 1) { 
+                printf("starting OAM scan on line %d\n", ppu->current_ly);
                 ppu_oam_scan(ppu);
             }
             // total of 80 t-cycles 
@@ -540,13 +546,14 @@ void ppu_step(ppu *ppu) {
                 ppu_update_stat(ppu);
                 ppu_check_stat_interrupt(ppu);
             }
-
+            // printf("after OAM scan\n");
             break;
 
         case MODE_DRAWING:
             // drawing mode takes ~172-289 cycles depending on sprites
             if (ppu->dot_counter >= 172) {
                 // complete current scanline drawing
+                printf("drawing -> HBLANK mode (line %d)\n", ppu->current_ly);
                 ppu_render_scanline(ppu);
                 
                 // move to hblank
@@ -562,8 +569,9 @@ void ppu_step(ppu *ppu) {
             if (ppu->dot_counter >= 456 - (80 + 172)) {
                 ppu->current_ly++;
                 ppu->dot_counter = 0;
-                
+                // printf("HBLANK complete. new LY: %d\n", ppu->current_ly);
                 if (ppu->current_ly == 144) {
+                    printf("entering VBLANK!\n");
                     // enter vblank when we hit scanline 144
                     ppu->mode = MODE_VBLANK;
                     // request vblank interrupt
@@ -581,15 +589,21 @@ void ppu_step(ppu *ppu) {
             break;
 
         case MODE_VBLANK:
+            // printf("in VBLANK - current dot_counter: %d, current LY: %d\n", ppu->dot_counter, ppu->current_ly);
+            
             if (ppu->dot_counter >= 456) {
                 ppu->dot_counter = 0;
                 ppu->current_ly++;
-
+                
                 // check if vblank is finished
                 if (ppu->current_ly >= 154) {
                     // notify display that frame is ready before clearing buffer
+                    printf("VBLANK complete - starting new frame\n");
                     if (ppu->frame_complete_callback != NULL) {
+                        printf("calling frame complete callback\n");
                         ppu->frame_complete_callback(ppu->screen_buffer);
+                    } else {
+                        printf("no frame callback set\n");
                     }
                     
                     ppu->current_ly = 0;

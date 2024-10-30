@@ -45,6 +45,7 @@ typedef struct {
 void ppu_init(ppu *ppu, bus *bus);
 void ppu_step(ppu *ppu);
 // void ppu_cleanup(ppu *ppu);
+void ppu_set_frame_callback(ppu *ppu, void (*callback)(uint8_t *buffer));
 
 // register functions
 // uint8_t ppu_read_register(ppu *ppu, uint16_t address);
