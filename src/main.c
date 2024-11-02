@@ -114,8 +114,8 @@ void display_frame(uint8_t *buffer) {
     uint32_t pixels[SCREEN_WIDTH * SCREEN_HEIGHT];
     
     // add debug print
-    printf("Display frame called, first few pixels: %d %d %d %d\n", 
-           buffer[0], buffer[1], buffer[2], buffer[3]);
+    // printf("Display frame called, first few pixels: %d %d %d %d\n", 
+    //        buffer[0], buffer[1], buffer[2], buffer[3]);
     
     // convert gameboy palette to RGBA
     for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++) {

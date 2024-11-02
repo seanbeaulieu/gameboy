@@ -92,7 +92,16 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
             } else {
                 bus->memory[address] = value;
             }
-        } else {
+
+        }
+        
+        if (address == 0xFF40) {
+            printf("writing to LCDC\n");
+            print_bits(value);
+            bus->memory[address] = value;
+        }
+
+        else {
             bus->memory[address] = value;
         }
     } else {
@@ -164,4 +173,14 @@ int load_rom(bus *bus, const char *rom_path) {
 
     fclose(file);
     return 0;
+}
+
+// helper to print bits
+void print_bits(uint8_t value) {
+    printf("0x%02X (", value);
+    for (int i = 7; i >= 0; i--) {
+        printf("%d", (value >> i) & 1);
+        if (i == 4) printf(" ");
+    }
+    printf(")\n");
 }

@@ -21,5 +21,6 @@ void bus_increment_div(bus *bus);
 // uint8_t bus_read_timer_register(bus *bus, uint16_t address);
 // void bus_write_timer_register(bus *bus, uint16_t address, uint8_t value);
 int load_rom(bus *bus, const char *rom_path);
+void print_bits(uint8_t value);
 
 #endif
