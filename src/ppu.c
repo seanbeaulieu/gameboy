@@ -547,6 +547,7 @@ void ppu_step(ppu *ppu) {
         case MODE_OAM_SCAN:
             // entered at the start of every scanline
             if (ppu->dot_counter == 1) { 
+                ppu_check_lyc(ppu);
                 // printf("starting OAM scan on line %d\n", ppu->current_ly);
                 ppu_oam_scan(ppu);
             }
@@ -580,6 +581,8 @@ void ppu_step(ppu *ppu) {
             if (ppu->dot_counter >= 456 - (80 + 172)) {
                 ppu->current_ly++;
                 ppu->dot_counter = 0;
+                ppu_check_lyc(ppu);
+
                 // printf("HBLANK complete. new LY: %d\n", ppu->current_ly);
                 if (ppu->current_ly == 144) {
                     // printf("entering VBLANK!\n");
@@ -588,6 +591,7 @@ void ppu_step(ppu *ppu) {
                     // request vblank interrupt
                     uint8_t int_flag = bus_read8(ppu->bus, 0xFF0F);
                     bus_write8(ppu->bus, 0xFF0F, int_flag | 0x01);
+                    ppu_check_lyc(ppu);
                 } else {
                     // start next scanline with oam scan
                     ppu->mode = MODE_OAM_SCAN;
@@ -605,7 +609,7 @@ void ppu_step(ppu *ppu) {
             if (ppu->dot_counter >= 456) {
                 ppu->dot_counter = 0;
                 ppu->current_ly++;
-                
+                ppu_check_lyc(ppu);
                 // check if vblank is finished
                 if (ppu->current_ly >= 154) {
                     // notify display that frame is ready before clearing buffer
