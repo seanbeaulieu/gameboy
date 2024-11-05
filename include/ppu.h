@@ -39,7 +39,7 @@ typedef struct {
     uint8_t *vram;
     uint8_t *oam;
     bus *bus;
-
+    
 } ppu;
 
 void ppu_init(ppu *ppu, bus *bus);
@@ -64,13 +64,13 @@ void ppu_update_stat(ppu *ppu);
 
 // tile and sprite rendering
 void render_scanline(ppu *ppu);
-void render_background(ppu *ppu);
-void render_window(ppu *ppu);
-void render_sprites(ppu *ppu);
+// void render_background(ppu *ppu);
+// void render_window(ppu *ppu);
+// void render_sprites(ppu *ppu);
 
 // helper functions
-uint8_t get_tile_pixel(uint8_t *tile_data, uint8_t x, uint8_t y);
-uint8_t get_color_from_palette(uint8_t color_num, uint8_t palette);
-uint16_t get_tile_data_address(ppu *ppu, uint8_t tile_number);
+// uint8_t get_tile_pixel(uint8_t *tile_data, uint8_t x, uint8_t y);
+// uint8_t get_color_from_palette(uint8_t color_num, uint8_t palette);
+// uint16_t get_tile_data_address(ppu *ppu, uint8_t tile_number);
 
 #endif

@@ -144,12 +144,12 @@ int main(int argc, char *argv[]) {
     printf("callback set: %s\n", PPU.frame_complete_callback != NULL ? "yes" : "no");
     ppu_init(&PPU, &gameboy.bus);
 
-    // // open log file
-    // log_file = fopen("logfile.txt", "w");
-    // if (log_file == NULL) {
-    //     fprintf(stderr, "Failed to open log file. Exiting.\n");
-    //     return 1;
-    // }
+    // open log file
+    log_file = fopen("logfile.txt", "w");
+    if (log_file == NULL) {
+        fprintf(stderr, "Failed to open log file. Exiting.\n");
+        return 1;
+    }
 
     // load rom 
     if (argc < 2) {
@@ -167,17 +167,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // printf("before game loop\n");
-    // game loop
-
-    // set pc to 0x100
-    ////////////////////////////////
-    gameboy.registers.pc = 0x100;
-    ////////////////////////////////
-    int index = 0;
-
-
-
     // initialize SDL display
     if (init_display() < 0) {
         fprintf(stderr, "display initialization failed\n");
@@ -187,29 +176,7 @@ int main(int argc, char *argv[]) {
     // game loop
     SDL_Event event;
     int running = 1;
-
-    // uint8_t test_buffer[SCREEN_WIDTH * SCREEN_HEIGHT];
-    // for(int y = 0; y < SCREEN_HEIGHT; y++) {
-    //     for(int x = 0; x < SCREEN_WIDTH; x++) {
-    //         // create a pattern with all 4 gameboy colors
-    //         if (x < SCREEN_WIDTH/2) {
-    //             if (y < SCREEN_HEIGHT/2) {
-    //                 test_buffer[y * SCREEN_WIDTH + x] = 0; // white
-    //             } else {
-    //                 test_buffer[y * SCREEN_WIDTH + x] = 1; // light gray
-    //             }
-    //         } else {
-    //             if (y < SCREEN_HEIGHT/2) {
-    //                 test_buffer[y * SCREEN_WIDTH + x] = 2; // dark gray
-    //             } else {
-    //                 test_buffer[y * SCREEN_WIDTH + x] = 3; // black
-    //             }
-    //         }
-    //     }
-    // }
-    // display_frame(test_buffer);
-
-
+    
     while (running) {
         // handle SDL events
         while (SDL_PollEvent(&event)) {
@@ -217,11 +184,11 @@ int main(int argc, char *argv[]) {
                 running = 0;
             }
         }
-
+        // debug_print(&gameboy);
         // existing emulation code
         cpu_step(&gameboy);
         ppu_step(&PPU);
-        // debug_print(&gameboy);
+        
     }
 
     // cleanup

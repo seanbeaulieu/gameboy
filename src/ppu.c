@@ -204,36 +204,34 @@ void ppu_set_frame_callback(ppu *ppu, void (*callback)(uint8_t *buffer)) {
     printf("Callback set - current ptr: %p\n", (void*)ppu->frame_complete_callback);
 }
 
-void ppu_write_register(ppu *ppu, uint16_t address, uint8_t value) {
-    switch(address) {
-        case LCDC:
-            bus_write8(ppu->bus, LCDC, value);
-            // if lcd is being disabled
-            if (!(value & LCDC_ENABLE)) {
-                ppu->mode = MODE_HBLANK;
-                ppu->current_ly = 0;
-                ppu->dot_counter = 0;
-                // clear screen buffer
-                memset(ppu->screen_buffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
-            }
-            break;
+// void ppu_write_register(ppu *ppu, uint16_t address, uint8_t value) {
+//     switch(address) {
+//         case LCDC:
+//             bus_write8(ppu->bus, LCDC, value);
+//             // if lcd is being disabled
+//             if (!(value & LCDC_ENABLE)) {
+//                 ppu->mode = MODE_HBLANK;
+//                 ppu->current_ly = 0;
+//                 ppu->dot_counter = 0;
+//                 // clear screen buffer
+//                 memset(ppu->screen_buffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
+//             }
+//             break;
             
-        case STAT:
+//         case STAT:
+//             bus_write8(ppu->bus, STAT, (value & 0x78) | (bus_read8(ppu->bus, STAT) & 0x07) | 0x80);
+//             break;
             
-            bus_write8(ppu->bus, STAT, (value & 0x78) | (bus_read8(ppu->bus, STAT) & 0x07) | 0x80);
+//         case LYC:
+//             bus_write8(ppu->bus, LYC, value);
+//             ppu_check_lyc(ppu);
+//             break;
             
-            break;
-            
-        case LYC:
-            bus_write8(ppu->bus, LYC, value);
-            ppu_check_lyc(ppu);
-            break;
-            
-        default:
-            bus_write8(ppu->bus, address, value);
-            break;
-    }
-}
+//         default:
+//             bus_write8(ppu->bus, address, value);
+//             break;
+//     }
+// }
 
 void ppu_check_lyc(ppu *ppu) {
     uint8_t stat = bus_read8(ppu->bus, STAT);
@@ -241,6 +239,7 @@ void ppu_check_lyc(ppu *ppu) {
     
     if (ppu->current_ly == lyc) {
         stat |= STAT_LYC_EQUAL;
+        // fire only if LYC enable bit is on and STAT IRQ isn't currently blocked
         if (stat & STAT_LYC_INT && !ppu->stat_irq_blocked) {
             // trigger STAT interrupt
             uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
@@ -297,7 +296,7 @@ void ppu_update_stat(ppu *ppu) {
     } else {
         stat &= ~(1 << 2);
     }
-    bus_write8(ppu->bus, STAT, stat);
+    ppu->bus->memory[0xFF41] = stat;
 }
 
 // ppu mode functions
@@ -359,11 +358,11 @@ void ppu_oam_scan(ppu *ppu) {
 void ppu_render_scanline(ppu *ppu) {
     uint8_t lcdc = bus_read8(ppu->bus, LCDC);
 
-    printf("lcdc: ");
-    for (int i = 7; i >= 0; i--) {
-        printf("%d", (lcdc >> i) & 1);
-    }
-    printf("\n");
+    // printf("lcdc: ");
+    // for (int i = 7; i >= 0; i--) {
+    //     printf("%d", (lcdc >> i) & 1);
+    // }
+    // printf("\n");
 
     uint8_t *scanline = &ppu->screen_buffer[ppu->current_ly * SCREEN_WIDTH];
     
@@ -420,12 +419,12 @@ void ppu_render_scanline(ppu *ppu) {
     // render window if enabled
     if ((lcdc & LCDC_WINDOW_ON) && (lcdc & LCDC_ENABLE) && (lcdc & LCDC_BG_ON)) {
         uint8_t wy = bus_read8(ppu->bus, WY);
-        uint8_t wx = bus_read8(ppu->bus, WX) - 7;
+        
         
         if (ppu->current_ly >= wy) {
             // similar to background rendering but for window
             
-            uint8_t wy = bus_read8(ppu->bus, WY);
+            
             uint8_t wx = bus_read8(ppu->bus, WX) - 7;
             
             if (ppu->current_ly >= wy) {
@@ -540,7 +539,7 @@ void ppu_step(ppu *ppu) {
     if (!(bus_read8(ppu->bus, LCDC) & LCDC_ENABLE)) {
         return;
     }
-
+    // increment by one t-counter
     ppu->dot_counter++;
 
     switch(ppu->mode) {

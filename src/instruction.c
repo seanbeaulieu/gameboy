@@ -7,6 +7,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
     uint8_t n;
     int16_t sn;
     uint32_t result;
+    
 
     // ("Executing opcode: 0x%02X\n", opcode);
 
@@ -64,11 +65,11 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     break;
                 // add hl, bc
                 case 0x9:
-                    nn = cpu_read_register_16bit(&cpu->registers, "hl") + cpu_read_register_16bit(&cpu->registers, "bc");
+                    result = cpu_read_register_16bit(&cpu->registers, "hl") + cpu_read_register_16bit(&cpu->registers, "bc");
                     cpu->registers.f.subtract = 0;
                     cpu->registers.f.half_carry = ((cpu_read_register_16bit(&cpu->registers, "hl") & 0xFFF) + (cpu_read_register_16bit(&cpu->registers, "bc") & 0xFFF) > 0xFFF);
-                    cpu->registers.f.carry = (nn & 0xFFFF0000) ? 1 : 0;
-                    cpu_write_register_16bit(&cpu->registers, "hl", nn & 0xFFFF);
+                    cpu->registers.f.carry = (result & 0xFFFF0000) ? 1 : 0;
+                    cpu_write_register_16bit(&cpu->registers, "hl", result & 0xFFFF);
                     break;
                 // ld a, [bc]
                 case 0xA:
