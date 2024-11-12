@@ -254,11 +254,72 @@ void ppu_check_lyc(ppu *ppu) {
     bus_write8(ppu->bus, STAT, stat);
 }
 
-void ppu_check_stat_interrupt(ppu *ppu) {
-    uint8_t stat = bus_read8(ppu->bus, STAT);
-    uint8_t request = 0;
+// void ppu_check_stat_interrupt(ppu *ppu) {
+//     uint8_t stat = bus_read8(ppu->bus, STAT);
+//     uint8_t request = 0;
     
-    // check each stat interrupt condition
+//     // check each stat interrupt condition
+//     switch(ppu->mode) {
+//         case MODE_HBLANK:
+//             request = (stat & STAT_HBLANK_INT);
+//             break;
+//         case MODE_VBLANK:
+//             request = (stat & STAT_VBLANK_INT);
+//             break;
+//         case MODE_OAM_SCAN:
+//             request = (stat & STAT_OAM_INT);
+//             break;
+//     }
+    
+//     // if lyc=ly is enabled and matches, that's another condition
+//     if ((stat & STAT_LYC_INT) && (stat & STAT_LYC_EQUAL)) {
+//         request = 1;
+//     }
+    
+//     // if any condition is met and interrupts aren't blocked
+//     if (request && !ppu->stat_irq_blocked) {
+//         uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
+//         bus_write8(ppu->bus, 0xFF0F, if_reg | 0x02);
+//         ppu->stat_irq_blocked = 1;
+//     } else if (!request) {
+//         ppu->stat_irq_blocked = 0;
+//     }
+// }
+
+// void ppu_update_stat(ppu *ppu) {
+//     uint8_t stat = bus_read8(ppu->bus, STAT);
+//     // clear mode bits (0-1) and set new mode
+//     stat = (stat & 0xFC) | ppu->mode;
+//     // update coincidence flag (bit 2) based on LY=LYC comparison
+//     if (ppu->current_ly == bus_read8(ppu->bus, LYC)) {
+//         stat |= (1 << 2);
+//     } else {
+//         stat &= ~(1 << 2);
+//     }
+//     ppu->bus->memory[0xFF41] = stat;
+// }
+
+void ppu_update_stat(ppu *ppu) {
+    // first update the stat register
+    uint8_t stat = bus_read8(ppu->bus, STAT);
+    
+    // clear mode bits (0-1) and set new mode
+    stat = (stat & 0xFC) | ppu->mode;
+    
+    // // update coincidence flag (bit 2)
+    // bool coincidence = (ppu->current_ly == bus_read8(ppu->bus, LYC));
+    // if (coincidence) {
+    //     stat |= (1 << 2);
+    // } else {
+    //     stat &= ~(1 << 2);
+    // }
+    // ppu->bus->memory[0xFF41] = stat;
+
+    ppu_check_lyc(ppu);
+
+    // now check interrupt conditions
+    // only enables interrupts if the "condition enabler" is true
+    uint8_t request = 0;
     switch(ppu->mode) {
         case MODE_HBLANK:
             request = (stat & STAT_HBLANK_INT);
@@ -272,9 +333,9 @@ void ppu_check_stat_interrupt(ppu *ppu) {
     }
     
     // if lyc=ly is enabled and matches, that's another condition
-    if ((stat & STAT_LYC_INT) && (stat & STAT_LYC_EQUAL)) {
-        request = 1;
-    }
+    // if ((stat & STAT_LYC_INT) && coincidence) {
+    //     request = 1;
+    // }
     
     // if any condition is met and interrupts aren't blocked
     if (request && !ppu->stat_irq_blocked) {
@@ -284,19 +345,6 @@ void ppu_check_stat_interrupt(ppu *ppu) {
     } else if (!request) {
         ppu->stat_irq_blocked = 0;
     }
-}
-
-void ppu_update_stat(ppu *ppu) {
-    uint8_t stat = bus_read8(ppu->bus, STAT);
-    // clear mode bits (0-1) and set new mode
-    stat = (stat & 0xFC) | ppu->mode;
-    // update coincidence flag (bit 2) based on LY=LYC comparison
-    if (ppu->current_ly == bus_read8(ppu->bus, LYC)) {
-        stat |= (1 << 2);
-    } else {
-        stat &= ~(1 << 2);
-    }
-    ppu->bus->memory[0xFF41] = stat;
 }
 
 // ppu mode functions
@@ -417,7 +465,7 @@ void ppu_render_scanline(ppu *ppu) {
     }
     
     // render window if enabled
-    if ((lcdc & LCDC_WINDOW_ON) && (lcdc & LCDC_ENABLE) && (lcdc & LCDC_BG_ON)) {
+    if ((lcdc & LCDC_WINDOW_ON) && (lcdc & LCDC_ENABLE)) {
         uint8_t wy = bus_read8(ppu->bus, WY);
         
         
@@ -555,7 +603,7 @@ void ppu_step(ppu *ppu) {
                 ppu->mode = MODE_DRAWING;
                 ppu->dot_counter = 0;
                 ppu_update_stat(ppu);
-                ppu_check_stat_interrupt(ppu);
+                // ppu_check_stat_interrupt(ppu);
             }
             // printf("after OAM scan\n");
             break;
@@ -571,7 +619,7 @@ void ppu_step(ppu *ppu) {
                 ppu->mode = MODE_HBLANK;
                 ppu->dot_counter = 0;
                 ppu_update_stat(ppu);
-                ppu_check_stat_interrupt(ppu);
+                // ppu_check_stat_interrupt(ppu);
             }
             break;
 
@@ -597,8 +645,8 @@ void ppu_step(ppu *ppu) {
                 }
                 
                 ppu_update_stat(ppu);
-                ppu_check_stat_interrupt(ppu);
-                ppu_check_lyc(ppu);
+                // ppu_check_stat_interrupt(ppu);
+                // ppu_check_lyc(ppu);
             }
             break;
 
@@ -625,7 +673,7 @@ void ppu_step(ppu *ppu) {
                     // clear screen buffer for next frame
                     memset(ppu->screen_buffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
                     ppu_update_stat(ppu);
-                    ppu_check_stat_interrupt(ppu);
+                    // ppu_check_stat_interrupt(ppu);
                 } else {
                     ppu_check_lyc(ppu);
                 }
