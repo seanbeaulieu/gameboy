@@ -217,17 +217,10 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Create cpu instance once
-    cpu gameboy;
-    memset(&gameboy, 0, sizeof(cpu));
-    cpu_init(&gameboy.registers);
-    bus_init(&gameboy.bus);
-
     // Check if argument is a directory or file
     struct stat path_stat;
     if (stat(argv[1], &path_stat) != 0) {
         printf("error: cannot access %s\n", argv[1]);
-        bus_free(&gameboy.bus);
         return 1;
     }
 
@@ -236,7 +229,6 @@ int main(int argc, char *argv[]) {
         DIR *dir = opendir(argv[1]);
         if (!dir) {
             printf("failed to open directory: %s\n", argv[1]);
-            bus_free(&gameboy.bus);
             return 1;
         }
 
@@ -244,17 +236,31 @@ int main(int argc, char *argv[]) {
         char filepath[1024];
         while ((entry = readdir(dir)) != NULL) {
             if (strstr(entry->d_name, ".json")) {
+                // Create new CPU instance for each test file
+                cpu gameboy;
+                memset(&gameboy, 0, sizeof(cpu));
+                cpu_init(&gameboy.registers);
+                bus_init(&gameboy.bus);
+
                 snprintf(filepath, sizeof(filepath), "%s/%s", argv[1], entry->d_name);
                 run_test_file(filepath, &gameboy);
+
+                // Cleanup after each test file
+                bus_free(&gameboy.bus);
             }
         }
         closedir(dir);
     } else {
         // Handle single file
+        cpu gameboy;
+        memset(&gameboy, 0, sizeof(cpu));
+        cpu_init(&gameboy.registers);
+        bus_init(&gameboy.bus);
+        
         run_test_file(argv[1], &gameboy);
+        
+        bus_free(&gameboy.bus);
     }
 
-    // Cleanup
-    bus_free(&gameboy.bus);
     return 0;
 }

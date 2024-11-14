@@ -266,46 +266,46 @@ bool verify_cpu_state(cpu *cpu, test_case *test) {
     
     // check registers
     if (cpu->registers.pc != test->final.pc) {
-        // printf("pc mismatch: expected 0x%04X, got 0x%04X\n", test->final.pc, cpu->registers.pc);
+        printf("pc mismatch: expected 0x%04X, got 0x%04X\n", test->final.pc, cpu->registers.pc);
         passed = false;
     }
     if (cpu->registers.sp != test->final.sp) {
-        // printf("sp mismatch: expected 0x%04X, got 0x%04X\n", test->final.sp, cpu->registers.sp);
+        printf("sp mismatch: expected 0x%04X, got 0x%04X\n", test->final.sp, cpu->registers.sp);
         passed = false;
     }
     if (cpu->registers.a != test->final.a) {
-        // printf("a mismatch: expected 0x%02X, got 0x%02X\n", test->final.a, cpu->registers.a);
+        printf("a mismatch: expected 0x%02X, got 0x%02X\n", test->final.a, cpu->registers.a);
         passed = false;
     }
     if (cpu->registers.b != test->final.b) {
-        // printf("b mismatch: expected 0x%02X, got 0x%02X\n", test->final.b, cpu->registers.b);
+        printf("b mismatch: expected 0x%02X, got 0x%02X\n", test->final.b, cpu->registers.b);
         passed = false;
     }
     if (cpu->registers.c != test->final.c) {
-        // printf("c mismatch: expected 0x%02X, got 0x%02X\n", test->final.c, cpu->registers.c);
+        printf("c mismatch: expected 0x%02X, got 0x%02X\n", test->final.c, cpu->registers.c);
         passed = false;
     }
     if (cpu->registers.d != test->final.d) {
-        // printf("d mismatch: expected 0x%02X, got 0x%02X\n", test->final.d, cpu->registers.d);
+        printf("d mismatch: expected 0x%02X, got 0x%02X\n", test->final.d, cpu->registers.d);
         passed = false;
     }
     if (cpu->registers.e != test->final.e) {
-        // printf("e mismatch: expected 0x%02X, got 0x%02X\n", test->final.e, cpu->registers.e);
+        printf("e mismatch: expected 0x%02X, got 0x%02X\n", test->final.e, cpu->registers.e);
         passed = false;
     }
     
     uint8_t actual_f = flags_register_to_byte(cpu->registers.f);
     if (actual_f != test->final.f) {
-        // printf("f mismatch: expected 0x%02X, got 0x%02X\n", test->final.f, actual_f);
+        printf("f mismatch: expected 0x%02X, got 0x%02X\n", test->final.f, actual_f);
         passed = false;
     }
     
     if (cpu->registers.h != test->final.h) {
-        // printf("h mismatch: expected 0x%02X, got 0x%02X\n", test->final.h, cpu->registers.h);
+        printf("h mismatch: expected 0x%02X, got 0x%02X\n", test->final.h, cpu->registers.h);
         passed = false;
     }
     if (cpu->registers.l != test->final.l) {
-        // printf("l mismatch: expected 0x%02X, got 0x%02X\n", test->final.l, cpu->registers.l);
+        printf("l mismatch: expected 0x%02X, got 0x%02X\n", test->final.l, cpu->registers.l);
         passed = false;
     }
     
@@ -313,8 +313,8 @@ bool verify_cpu_state(cpu *cpu, test_case *test) {
     for (int i = 0; i < test->final.ram_size; i++) {
         uint8_t actual = bus_read8(&cpu->bus, test->final.ram[i].address);
         if (actual != test->final.ram[i].value) {
-            // printf("memory mismatch at 0x%04X: expected 0x%02X, got 0x%02X\n", 
-                //    test->final.ram[i].address, test->final.ram[i].value, actual);
+            printf("memory mismatch at 0x%04X: expected 0x%02X, got 0x%02X\n", 
+                test->final.ram[i].address, test->final.ram[i].value, actual);
             passed = false;
         }
     }
