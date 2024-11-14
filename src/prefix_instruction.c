@@ -10,9 +10,9 @@ static uint8_t* get_register_pointer(cpu *cpu, uint8_t reg_index) {
         case 3: return &cpu->registers.e;
         case 4: return &cpu->registers.h;
         case 5: return &cpu->registers.l;
-        case 6: return NULL; // (HL) is handled separately
+        case 6: return NULL; 
         case 7: return &cpu->registers.a;
-        default: return NULL; // Should never happen
+        default: return NULL; 
     }
 }
 
@@ -83,7 +83,7 @@ void prefix_instruction_execute(cpu *cpu, uint8_t opcode) {
             cpu->registers.f.zero = !(value & (1 << bit_index));
             cpu->registers.f.subtract = 0;
             cpu->registers.f.half_carry = 1;
-            return; // Don't write back for BIT operations
+            return; // don't write back for BIT operations
 
         case 0x80: // RES
             value &= ~(1 << bit_index);

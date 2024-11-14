@@ -42,74 +42,91 @@ void bus_free(bus *bus) {
 
 uint8_t bus_read8(bus *bus, uint16_t address) {
     // for testing
-    if (address == 0xFF44) {
-        return 0x90;  
-    }
+    // if (address == 0xFF44) {
+    //     return 0x90;  
+    // }
     return bus->memory[address];
 }
 
 void bus_write8(bus *bus, uint16_t address, uint8_t value) {
-    if (address < 0x8000) {
-        // ROM - typically not writable
-        // Maybe handle bank switching here
-    } else if (address < 0xA000) {
-        // VRAM
-        bus->memory[address] = value;
-        // Maybe trigger some graphics update
-    } else if (address < 0xC000) {
-        // External RAM
-        // printf("writing to WRAM");
-        bus->memory[address] = value;
-    } else if (address < 0xE000) {
-        // WRAM
-        bus->memory[address] = value;
-        // Mirror to Echo RAM
-        if (address < 0xDE00) {
-            bus->memory[address + 0x2000] = value;
-        }
-    } else if (address < 0xFE00) {
-        // Echo RAM - write to WRAM instead
-        bus->memory[address - 0x2000] = value;
-    } else if (address < 0xFEA0) {
-        // OAM
-        bus->memory[address] = value;
-        // Maybe trigger sprite update
-    } else if (address < 0xFF00) {
-        // Not usable
-        
-    } else if (address < 0xFF80) {
-        // I/O Registers
-        if (address == 0xFF01) {
-            printf("%c", value);
-        }
-        
-        if (address == 0xFF0F || address == 0xFFFF || (address >= 0xFF04 && address <= 0xFF07)) {
-            // interrupt and timer registers
-            // DIV register
-            if (address == 0xFF04) { 
-                 // writing any value resets DIV to 0
-                bus->memory[address] = 0;
-            } else {
-                bus->memory[address] = value;
-            }
-
-        }
-        
-        if (address == 0xFF40) {
-            printf("writing to LCDC\n");
-            print_bits(value);
-            bus->memory[address] = value;
-        }
-
-        else {
-            bus->memory[address] = value;
-        }
-    } else {
-        // High RAM (HRAM)
-        bus->memory[address] = value;
-    }
+    // for testing, treat all memory as RAM
+    bus->memory[address] = value;
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+// void bus_write8(bus *bus, uint16_t address, uint8_t value) {
+//     if (address < 0x8000) {
+//         // ROM - typically not writable
+//         // Maybe handle bank switching here
+//         bus->memory[address] = value;
+//     } else if (address < 0xA000) {
+//         // VRAM
+//         bus->memory[address] = value;
+//         // Maybe trigger some graphics update
+//     } else if (address < 0xC000) {
+//         // External RAM
+//         // printf("writing to WRAM");
+//         bus->memory[address] = value;
+//     } else if (address < 0xE000) {
+//         // WRAM
+//         bus->memory[address] = value;
+//         // Mirror to Echo RAM
+//         if (address < 0xDE00) {
+//             bus->memory[address + 0x2000] = value;
+//         }
+//     } else if (address < 0xFE00) {
+//         // Echo RAM - write to WRAM instead
+//         bus->memory[address - 0x2000] = value;
+//     } else if (address < 0xFEA0) {
+//         // OAM
+//         bus->memory[address] = value;
+//         // Maybe trigger sprite update
+//     } else if (address < 0xFF00) {
+//         // Not usable
+        
+//     } else if (address < 0xFF80) {
+//         // I/O Registers
+//         if (address == 0xFF01) {
+//             printf("%c", value);
+//         }
+        
+//         if (address == 0xFF0F || address == 0xFFFF || (address >= 0xFF04 && address <= 0xFF07)) {
+//             // interrupt and timer registers
+//             // DIV register
+//             if (address == 0xFF04) { 
+//                  // writing any value resets DIV to 0
+//                 bus->memory[address] = 0;
+//             } else {
+//                 bus->memory[address] = value;
+//             }
+
+//         }
+        
+//         if (address == 0xFF40) {
+//             printf("writing to LCDC\n");
+//             print_bits(value);
+//             bus->memory[address] = value;
+//         }
+
+//         if (address == 0xFF41) {  // STAT register
+//             // only allow writing to bits 3-6 (interrupt enable bits)
+//             uint8_t current = bus_read8(bus, 0xFF41);
+//             uint8_t writable_bits = value & 0x78;  // bits 3-6
+//             uint8_t readonly_bits = current & 0x87; // bits 0-2,7
+//             bus->memory[address] = writable_bits | readonly_bits;
+//         }
+
+//         else {
+//             bus->memory[address] = value;
+//         }
+//     } else {
+//         // High RAM (HRAM)
+//         bus->memory[address] = value;
+//     }
+// }
+
+/////////////////////////////////////////////////////////////////////////////
 
 // review this and any instructions that call it
 uint16_t bus_read16(bus *bus, uint16_t address) {

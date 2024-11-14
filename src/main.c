@@ -204,6 +204,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
+#include <sys/stat.h> 
+#include <unistd.h> 
 #include "../include/cpu.h"
 #include "../include/bus.h"
 #include "../include/ppu.h"
@@ -211,51 +213,48 @@
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
-        printf("usage: %s <test_directory>\n", argv[0]);
+        printf("usage: %s <test_file_or_directory>\n", argv[0]);
         return 1;
     }
 
-    // initialize everything as per your original main
+    // Create cpu instance once
     cpu gameboy;
-    ppu PPU;
     memset(&gameboy, 0, sizeof(cpu));
-    
-    // init systems
     cpu_init(&gameboy.registers);
-    cpu_init_test(&gameboy.registers);
     bus_init(&gameboy.bus);
-    //ppu_set_frame_callback(&PPU, display_frame);
-    //ppu_init(&PPU, &gameboy.bus);
 
-    DIR *dir;
-    struct dirent *entry;
-    char filepath[1024];
-    int total_files = 0;
-    int fully_passed_files = 0;
-
-    dir = opendir(argv[1]);
-    if (dir == NULL) {
-        printf("failed to open directory: %s\n", argv[1]);
+    // Check if argument is a directory or file
+    struct stat path_stat;
+    if (stat(argv[1], &path_stat) != 0) {
+        printf("error: cannot access %s\n", argv[1]);
+        bus_free(&gameboy.bus);
         return 1;
     }
 
-    // process each .json file in the directory
-    while ((entry = readdir(dir)) != NULL) {
-        if (strstr(entry->d_name, ".json")) {
-            total_files++;
-            
-            // construct full file path
-            snprintf(filepath, sizeof(filepath), "%s/%s", argv[1], entry->d_name);
-            
-            // run tests for this file
-            run_test_file(filepath);
+    if (S_ISDIR(path_stat.st_mode)) {
+        // Handle directory
+        DIR *dir = opendir(argv[1]);
+        if (!dir) {
+            printf("failed to open directory: %s\n", argv[1]);
+            bus_free(&gameboy.bus);
+            return 1;
         }
+
+        struct dirent *entry;
+        char filepath[1024];
+        while ((entry = readdir(dir)) != NULL) {
+            if (strstr(entry->d_name, ".json")) {
+                snprintf(filepath, sizeof(filepath), "%s/%s", argv[1], entry->d_name);
+                run_test_file(filepath, &gameboy);
+            }
+        }
+        closedir(dir);
+    } else {
+        // Handle single file
+        run_test_file(argv[1], &gameboy);
     }
 
-    closedir(dir);
-    
-    // cleanup
+    // Cleanup
     bus_free(&gameboy.bus);
-    
     return 0;
 }

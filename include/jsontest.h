@@ -2,8 +2,8 @@
 #define SM83_TEST_H
 
 #include <stdbool.h>
-#include "../include/cpu.h"
 #include <cjson/cJSON.h>
+#include "../include/cpu.h"
 
 // test case structure
 typedef struct {
@@ -45,10 +45,9 @@ typedef struct {
     } final;
 } test_case;
 
-// core testing functions
-void run_test_file(const char* filename);
-
-// helper functions
+// function declarations
+static char* safe_strdup(const char* str);
+void run_test_file(const char* filename, cpu *gameboy);
 test_case* parse_test(cJSON* json);
 void setup_cpu_state(cpu *cpu, test_case *test);
 bool verify_cpu_state(cpu *cpu, test_case *test);

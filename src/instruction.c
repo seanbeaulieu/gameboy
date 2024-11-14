@@ -7,6 +7,26 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
     uint8_t n;
     int16_t sn;
     uint32_t result;
+
+    uint8_t cb_op_tcycles[0x100] = {
+        //   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+        8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0x00
+        8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0x10
+        8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0x20
+        8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0x30
+        8, 8, 8, 8, 8, 8,12, 8, 8, 8, 8, 8, 8, 8,12, 8,    // 0x40
+        8, 8, 8, 8, 8, 8,12, 8, 8, 8, 8, 8, 8, 8,12, 8,    // 0x50
+        8, 8, 8, 8, 8, 8,12, 8, 8, 8, 8, 8, 8, 8,12, 8,    // 0x60
+        8, 8, 8, 8, 8, 8,12, 8, 8, 8, 8, 8, 8, 8,12, 8,    // 0x70
+        8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0x80
+        8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0x90
+        8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0xA0
+        8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0xB0
+        8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0xC0
+        8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0xD0
+        8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0xE0
+        8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8     // 0xF0
+    };
     
 
     // ("Executing opcode: 0x%02X\n", opcode);
@@ -446,7 +466,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                 uint8_t dst = (opcode >> 3) & 0x07;
                 uint8_t value;
 
-                // Source selection
+                // source selection
                 switch (src) {
                     case 0: value = cpu->registers.b; break;
                     case 1: value = cpu->registers.c; break;
@@ -458,7 +478,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     case 7: value = cpu->registers.a; break;
                 }
 
-                // Destination selection
+                // destination selection
                 switch (dst) {
                     case 0: cpu->registers.b = value; break;
                     case 1: cpu->registers.c = value; break;
@@ -808,9 +828,10 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                 }
                 // PREFIX CB
                 case 0xB: {
-                    // Execute CB-prefixed instruction
+                    // execute CB instructions
                     n = bus_read8(&cpu->bus, cpu->registers.pc++);
                     prefix_instruction_execute(cpu, n);
+                    cpu->counter += cb_op_tcycles[n];
                     break;
                 }
                 // CALL Z, a16
