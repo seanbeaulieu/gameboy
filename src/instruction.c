@@ -458,6 +458,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                 // halt goes first
                 if (opcode == 0x76) {
                     cpu->halted = 1;
+                    // cpu->registers.pc++;
                     // printf("halted called in instruction");
                     break;
                 }
@@ -831,7 +832,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                     // execute CB instructions
                     n = bus_read8(&cpu->bus, cpu->registers.pc++);
                     prefix_instruction_execute(cpu, n);
-                    cpu->counter += cb_op_tcycles[n];
+                    cpu->counter = cb_op_tcycles[n];
                     break;
                 }
                 // CALL Z, a16

@@ -252,47 +252,56 @@ uint8_t cb_op_tcycles[0x100] = {
 
 void cpu_step(cpu *cpu) {
    
-    // Handle interrupts first
+    // handle interrupts first
     if (cpu->ime) {
         // printf("cpu->ime is true");
         cpu_handle_interrupts(cpu);
     }
 
-    // Check if CPU is halted
+    // check if CPU is halted
     if (cpu->halted) {
-        // While halted, only update timers and check for interrupts
+        // while halted, only update timers and check for interrupts
         // printf("in cpu->halted is true");
-        cpu_update_timers(cpu);
-        // Check if any enabled interrupt is pending
-        uint8_t ie = bus_read8(&cpu->bus, 0xFFFF); // Interrupt Enable
-        uint8_t if_ = bus_read8(&cpu->bus, 0xFF0F); // Interrupt Flag
+        
+        // cpu_update_timers(cpu);
+        
+        // check if any enabled interrupt is pending
+        uint8_t ie = bus_read8(&cpu->bus, 0xFFFF); // interrupt Enable
+        uint8_t if_ = bus_read8(&cpu->bus, 0xFF0F); // interrupt Flag
         if (ie & if_) {
-            // An enabled interrupt is pending, exit halt state
+            // an enabled interrupt is pending, exit halt state
             cpu->halted = 0;
         } else {
-            // Still halted, don't execute an instruction
-            cpu->count++;  // Increment the total cycle count
+            // still halted, don't execute an instruction
+            cpu->registers.pc++;
+            cpu->count++;  // increment the total cycle count
             return;
         }
     }
 
-    // Fetch the next instruction
+    // fetch the next instruction
     uint8_t opcode = bus_read8(&cpu->bus, cpu->registers.pc++);
     
-    // Set the counter for this instruction
+    // set the counter for this instruction
     cpu->counter = op_tcycles[opcode];  // do not convert T-cycles to M-cycles
     // printf("counter: %d \n", cpu->counter);
 
-    // Execute the instruction
+    // if (opcode == 0xCB) {
+    //     uint8_t cb_opcode = bus_read8(&cpu->bus, cpu->registers.pc++);
+    //     cpu->counter = cb_op_tcycles[cb_opcode];
+    // }
+
+    // execute the instruction
+    // cb instructions are handled in instruction.c, counter and increment are done in 0xCB
     instruction_execute(cpu, opcode);
 
-    // Update timers
+    // call update timers
     cpu_update_timers(cpu);
 
-    // Update the total cycle count
+    // update the total cycle count
     cpu->count += cpu->counter;
 
-    // Reset the counter
+    // reset the counter
     cpu->counter = 0;
 
 }

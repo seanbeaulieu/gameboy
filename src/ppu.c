@@ -171,7 +171,7 @@ void ppu_init(ppu *ppu, bus *bus) {
     
     memset(ppu->screen_buffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
 
-    printf("PPU init end - callback ptr: %p\n", (void*)ppu->frame_complete_callback);
+    // printf("PPU init end - callback ptr: %p\n", (void*)ppu->frame_complete_callback);
 }
 
 // uint8_t ppu_read_register(ppu *ppu, uint16_t address) {
@@ -339,6 +339,7 @@ void ppu_update_stat(ppu *ppu) {
     
     // if any condition is met and interrupts aren't blocked
     if (request && !ppu->stat_irq_blocked) {
+        printf("stat interrupts triggered");
         uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
         bus_write8(ppu->bus, 0xFF0F, if_reg | 0x02);
         ppu->stat_irq_blocked = 1;
@@ -382,7 +383,7 @@ void ppu_oam_scan(ppu *ppu) {
             // check if sprite is on current scanline
             int16_t sprite_row = (ppu->current_ly + 16) - y_pos;
             
-            if (x_pos > 0 && sprite_row >= 0 && sprite_row < sprite_height) {
+            if (sprite_row >= 0 && sprite_row < sprite_height) {
                 
                 // add sprite to buffer
                 sprite_data *sprite = &ppu->sprite_buffer[ppu->sprite_count];
@@ -415,6 +416,9 @@ void ppu_render_scanline(ppu *ppu) {
     uint8_t *scanline = &ppu->screen_buffer[ppu->current_ly * SCREEN_WIDTH];
     
     // if background is enabled
+    if (lcdc & !LCDC_BG_ON) {
+        printf("LCDC BG OFF");
+    }
     if (lcdc & LCDC_BG_ON) {
         uint8_t scy = bus_read8(ppu->bus, SCY);
         uint8_t scx = bus_read8(ppu->bus, SCX);
@@ -442,7 +446,7 @@ void ppu_render_scanline(ppu *ppu) {
             } else {
                 tile_data = 0x9000 + ((int8_t)tile_num * 16);
             }
-            
+
             // get the two bytes for this line of the tile
             uint8_t byte1 = ppu->vram[(tile_data + (fine_y * 2)) - VRAM_START];
             uint8_t byte2 = ppu->vram[(tile_data + (fine_y * 2) + 1) - VRAM_START];
@@ -527,7 +531,24 @@ void ppu_render_scanline(ppu *ppu) {
     
     // render sprites if enabled
     if (lcdc & LCDC_OBJ_ON) {
-        // render sprites from buffer in reverse order
+        // sort sprites by x coordinate (ascending) and OAM index for proper priority
+        for (int i = 0; i < ppu->sprite_count - 1; i++) {
+            for (int j = i + 1; j < ppu->sprite_count; j++) {
+                // compare x positions first
+                if (ppu->sprite_buffer[j].x_pos < ppu->sprite_buffer[i].x_pos ||
+                    // if x positions are equal, earlier OAM index has priority
+                    (ppu->sprite_buffer[j].x_pos == ppu->sprite_buffer[i].x_pos && 
+                    ppu->sprite_buffer[j].index < ppu->sprite_buffer[i].index)) {
+                    // swap sprites
+                    sprite_data temp = ppu->sprite_buffer[i];
+                    ppu->sprite_buffer[i] = ppu->sprite_buffer[j];
+                    ppu->sprite_buffer[j] = temp;
+                }
+            }
+        }
+
+        // render sprites from highest to lowest priority (reverse order)
+        // this way, lower priority sprites are drawn first and can be overwritten
         for (int i = ppu->sprite_count - 1; i >= 0; i--) {
             sprite_data *sprite = &ppu->sprite_buffer[i];
             
@@ -550,16 +571,18 @@ void ppu_render_scanline(ppu *ppu) {
             for (int x = 0; x < 8; x++) {
                 int pixel_x = sprite->x_pos - 8 + x;
                 
+                // check if pixel is on screen
                 if (pixel_x >= 0 && pixel_x < SCREEN_WIDTH) {
                     uint8_t bit = sprite->flags & 0x20 ? x : 7 - x;
                     uint8_t color = ((byte1 >> bit) & 1) | (((byte2 >> bit) & 1) << 1);
                     
-                    if (color > 0) {  // color 0 is transparent
+                    // only draw non-transparent (opaque) pixels
+                    if (color > 0) {
                         // apply sprite palette
                         uint8_t palette = bus_read8(ppu->bus, sprite->flags & 0x10 ? OBP1 : OBP0);
                         color = (palette >> (color * 2)) & 3;
                         
-                        // check sprite priority
+                        // check sprite to background priority
                         if (!(sprite->flags & 0x80) || scanline[pixel_x] == 0) {
                             scanline[pixel_x] = color;
                         }

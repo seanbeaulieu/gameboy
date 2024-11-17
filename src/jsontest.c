@@ -380,7 +380,9 @@ void run_test_file(const char* filename, cpu *gameboy) {
             if (verify_cpu_state(gameboy, test)) {
                 passed_tests++;
             } else {
-                // printf("Failed test in %s: %s\n", base_filename, test->name);
+                printf("Failed test in %s: %s\n", base_filename, test->name);
+                free_test_case(test);
+                break;
             }
             total_tests++;
             free_test_case(test);
@@ -388,5 +390,9 @@ void run_test_file(const char* filename, cpu *gameboy) {
     }
 
     printf("%s: %d/%d tests passed\n", base_filename, passed_tests, total_tests);
+    // if (passed_tests != total_tests) {
+    //     printf("%s: %d/%d tests passed\n", base_filename, passed_tests, total_tests);
+    // }
+
     cJSON_Delete(json);
 }
