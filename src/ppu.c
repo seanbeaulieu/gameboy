@@ -174,28 +174,6 @@ void ppu_init(ppu *ppu, bus *bus) {
     // printf("PPU init end - callback ptr: %p\n", (void*)ppu->frame_complete_callback);
 }
 
-// uint8_t ppu_read_register(ppu *ppu, uint16_t address) {
-//     switch(address) {
-//         case LCDC:
-//             return bus_read8(ppu->bus, LCDC);
-            
-//         case STAT: {
-//             uint8_t stat = bus_read8(ppu->bus, STAT);
-//             // bit 7 is unused and always returns 1
-//             return (stat | 0x80) & 0xFC | ppu->mode;
-//         }
-            
-//         case LY:
-//             return ppu->current_ly;
-            
-//         case LYC:
-//             return bus_read8(ppu->bus, LYC);
-            
-//         default:
-//             return bus_read8(ppu->bus, address);
-//     }
-// }
-
 // set callback
 void ppu_set_frame_callback(ppu *ppu, void (*callback)(uint8_t *buffer)) {
     printf("Setting callback - old ptr: %p, new ptr: %p\n", 
@@ -204,55 +182,26 @@ void ppu_set_frame_callback(ppu *ppu, void (*callback)(uint8_t *buffer)) {
     printf("Callback set - current ptr: %p\n", (void*)ppu->frame_complete_callback);
 }
 
-// void ppu_write_register(ppu *ppu, uint16_t address, uint8_t value) {
-//     switch(address) {
-//         case LCDC:
-//             bus_write8(ppu->bus, LCDC, value);
-//             // if lcd is being disabled
-//             if (!(value & LCDC_ENABLE)) {
-//                 ppu->mode = MODE_HBLANK;
-//                 ppu->current_ly = 0;
-//                 ppu->dot_counter = 0;
-//                 // clear screen buffer
-//                 memset(ppu->screen_buffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
-//             }
-//             break;
-            
-//         case STAT:
-//             bus_write8(ppu->bus, STAT, (value & 0x78) | (bus_read8(ppu->bus, STAT) & 0x07) | 0x80);
-//             break;
-            
-//         case LYC:
-//             bus_write8(ppu->bus, LYC, value);
-//             ppu_check_lyc(ppu);
-//             break;
-            
-//         default:
-//             bus_write8(ppu->bus, address, value);
-//             break;
+// void ppu_check_lyc(ppu *ppu) {
+//     uint8_t stat = bus_read8(ppu->bus, STAT);
+//     uint8_t lyc = bus_read8(ppu->bus, LYC);
+    
+//     if (ppu->current_ly == lyc) {
+//         stat |= STAT_LYC_EQUAL;
+//         // fire only if LYC enable bit is on and STAT IRQ isn't currently blocked
+//         if (stat & STAT_LYC_INT && !ppu->stat_irq_blocked) {
+//             // trigger STAT interrupt
+//             uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
+//             bus_write8(ppu->bus, 0xFF0F, if_reg | 0x02);
+//             ppu->stat_irq_blocked = 1;
+//         }
+//     } else {
+//         stat &= ~STAT_LYC_EQUAL;
+//         ppu->stat_irq_blocked = 0;
 //     }
+    
+//     bus_write8(ppu->bus, STAT, stat);
 // }
-
-void ppu_check_lyc(ppu *ppu) {
-    uint8_t stat = bus_read8(ppu->bus, STAT);
-    uint8_t lyc = bus_read8(ppu->bus, LYC);
-    
-    if (ppu->current_ly == lyc) {
-        stat |= STAT_LYC_EQUAL;
-        // fire only if LYC enable bit is on and STAT IRQ isn't currently blocked
-        if (stat & STAT_LYC_INT && !ppu->stat_irq_blocked) {
-            // trigger STAT interrupt
-            uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
-            bus_write8(ppu->bus, 0xFF0F, if_reg | 0x02);
-            ppu->stat_irq_blocked = 1;
-        }
-    } else {
-        stat &= ~STAT_LYC_EQUAL;
-        ppu->stat_irq_blocked = 0;
-    }
-    
-    bus_write8(ppu->bus, STAT, stat);
-}
 
 // void ppu_check_stat_interrupt(ppu *ppu) {
 //     uint8_t stat = bus_read8(ppu->bus, STAT);
@@ -299,52 +248,132 @@ void ppu_check_lyc(ppu *ppu) {
 //     ppu->bus->memory[0xFF41] = stat;
 // }
 
-void ppu_update_stat(ppu *ppu) {
-    // first update the stat register
+// void ppu_update_stat(ppu *ppu) {
+//     // first update the stat register
+//     uint8_t stat = bus_read8(ppu->bus, STAT);
+    
+//     // clear mode bits (0-1) and set new mode
+//     stat = (stat & 0xFC) | ppu->mode;
+    
+//     // // update coincidence flag (bit 2)
+//     // bool coincidence = (ppu->current_ly == bus_read8(ppu->bus, LYC));
+//     // if (coincidence) {
+//     //     stat |= (1 << 2);
+//     // } else {
+//     //     stat &= ~(1 << 2);
+//     // }
+//     // ppu->bus->memory[0xFF41] = stat;
+
+//     ppu_check_lyc(ppu);
+
+//     // now check interrupt conditions
+//     // only enables interrupts if the "condition enabler" is true
+//     uint8_t request = 0;
+//     switch(ppu->mode) {
+//         case MODE_HBLANK:
+//             request = (stat & STAT_HBLANK_INT);
+//             break;
+//         case MODE_VBLANK:
+//             request = (stat & STAT_VBLANK_INT);
+//             break;
+//         case MODE_OAM_SCAN:
+//             request = (stat & STAT_OAM_INT);
+//             break;
+//     }
+    
+//     // if lyc=ly is enabled and matches, that's another condition
+//     // if ((stat & STAT_LYC_INT) && coincidence) {
+//     //     request = 1;
+//     // }
+    
+//     // if any condition is met and interrupts aren't blocked
+//     if (request && !ppu->stat_irq_blocked) {
+//         printf("stat interrupts triggered");
+//         uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
+//         bus_write8(ppu->bus, 0xFF0F, if_reg | 0x02);
+//         ppu->stat_irq_blocked = 1;
+//     } else if (!request) {
+//         ppu->stat_irq_blocked = 0;
+//     }
+// }
+
+// void ppu_check_stat_interrupts(ppu *ppu) {
+//     uint8_t stat = bus_read8(ppu->bus, STAT);
+//     uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
+//     bool interrupt_requested = false;
+    
+//     // ly=lyc coincidence
+//     uint8_t lyc = bus_read8(ppu->bus, LYC);
+    
+//     // update coincidence flag
+//     if (ppu->current_ly == lyc) {
+//         stat |= STAT_LYC_EQUAL;
+//         // trigger interrupt if enabled
+//         if (stat & STAT_LYC_INT) {
+//             interrupt_requested = true;
+//         }
+//     } else {
+//         stat &= ~STAT_LYC_EQUAL;
+//     }
+
+//     // check mode-based interrupts
+//     switch(ppu->mode) {
+//         case MODE_HBLANK:
+//             if (stat & STAT_HBLANK_INT) interrupt_requested = true;
+//             break;
+//         case MODE_VBLANK:
+//             if (stat & STAT_VBLANK_INT) interrupt_requested = true;
+//             break;
+//         case MODE_OAM_SCAN:
+//             if (stat & STAT_OAM_INT) interrupt_requested = true;
+//             break;
+//     }
+
+//     // write back updated STAT
+//     bus_write8(ppu->bus, STAT, stat);
+
+//     // set STAT interrupt if any conditions met
+//     if (interrupt_requested) {
+//         bus_write8(ppu->bus, 0xFF0F, if_reg | 0x02);  // set bit 1 for STAT interrupt
+//     }
+// }
+
+void ppu_check_stat_interrupts(ppu *ppu) {
     uint8_t stat = bus_read8(ppu->bus, STAT);
+    uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
+    bool interrupt_requested = false;
     
-    // clear mode bits (0-1) and set new mode
-    stat = (stat & 0xFC) | ppu->mode;
-    
-    // // update coincidence flag (bit 2)
-    // bool coincidence = (ppu->current_ly == bus_read8(ppu->bus, LYC));
-    // if (coincidence) {
-    //     stat |= (1 << 2);
-    // } else {
-    //     stat &= ~(1 << 2);
-    // }
-    // ppu->bus->memory[0xFF41] = stat;
+    // LY=LYC check
+    uint8_t lyc = bus_read8(ppu->bus, LYC);
+    if (ppu->current_ly == lyc) {
+        stat |= STAT_LYC_EQUAL;
+        if (stat & STAT_LYC_INT) {
+            interrupt_requested = true;
+        }
+    } else {
+        stat &= ~STAT_LYC_EQUAL;
+    }
 
-    ppu_check_lyc(ppu);
-
-    // now check interrupt conditions
-    // only enables interrupts if the "condition enabler" is true
-    uint8_t request = 0;
+    // Mode interrupts
     switch(ppu->mode) {
         case MODE_HBLANK:
-            request = (stat & STAT_HBLANK_INT);
+            if (stat & STAT_HBLANK_INT) interrupt_requested = true;
             break;
         case MODE_VBLANK:
-            request = (stat & STAT_VBLANK_INT);
+            if (stat & STAT_VBLANK_INT) interrupt_requested = true;
             break;
         case MODE_OAM_SCAN:
-            request = (stat & STAT_OAM_INT);
+            if (stat & STAT_OAM_INT) interrupt_requested = true;
             break;
     }
-    
-    // if lyc=ly is enabled and matches, that's another condition
-    // if ((stat & STAT_LYC_INT) && coincidence) {
-    //     request = 1;
-    // }
-    
-    // if any condition is met and interrupts aren't blocked
-    if (request && !ppu->stat_irq_blocked) {
-        printf("stat interrupts triggered");
-        uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
+
+    // Write back STAT updates
+    bus_write8(ppu->bus, STAT, stat);
+
+    // Request STAT interrupt if needed
+    if (interrupt_requested) {
+        printf("stat interrupt requested. Current LY:%d\n", ppu->current_ly);
         bus_write8(ppu->bus, 0xFF0F, if_reg | 0x02);
-        ppu->stat_irq_blocked = 1;
-    } else if (!request) {
-        ppu->stat_irq_blocked = 0;
     }
 }
 
@@ -383,7 +412,7 @@ void ppu_oam_scan(ppu *ppu) {
             // check if sprite is on current scanline
             int16_t sprite_row = (ppu->current_ly + 16) - y_pos;
             
-            if (sprite_row >= 0 && sprite_row < sprite_height) {
+            if (sprite_row >= 0 && sprite_row < sprite_height && x_pos != 0) {
                 
                 // add sprite to buffer
                 sprite_data *sprite = &ppu->sprite_buffer[ppu->sprite_count];
@@ -605,109 +634,84 @@ void ppu_render_scanline(ppu *ppu) {
 
 
 void ppu_step(ppu *ppu) {
-    
-    // check if lcd is enabled
     if (!(bus_read8(ppu->bus, LCDC) & LCDC_ENABLE)) {
         return;
     }
-    // increment by one t-counter
+    
     ppu->dot_counter++;
+    ppu_check_stat_interrupts(ppu);
 
     switch(ppu->mode) {
         case MODE_OAM_SCAN:
-            // entered at the start of every scanline
-            if (ppu->dot_counter == 1) { 
-                ppu_check_lyc(ppu);
-                // printf("starting OAM scan on line %d\n", ppu->current_ly);
+            if (ppu->dot_counter == 1) {
                 ppu_oam_scan(ppu);
+                ppu_check_stat_interrupts(ppu);
             }
-            // total of 80 t-cycles 
-            if (ppu->dot_counter >= 80) { 
+            if (ppu->dot_counter >= 80) {
                 ppu->mode = MODE_DRAWING;
                 ppu->dot_counter = 0;
-                ppu_update_stat(ppu);
-                // ppu_check_stat_interrupt(ppu);
+                // Update STAT mode bits first
+                uint8_t stat = bus_read8(ppu->bus, STAT);
+                bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
+                ppu_check_stat_interrupts(ppu);
             }
-            // printf("after OAM scan\n");
             break;
 
         case MODE_DRAWING:
-            // drawing mode takes ~172-289 cycles depending on sprites
             if (ppu->dot_counter >= 172) {
-                // complete current scanline drawing
-                // printf("drawing -> HBLANK mode (line %d)\n", ppu->current_ly);
                 ppu_render_scanline(ppu);
-                
-                // move to hblank
                 ppu->mode = MODE_HBLANK;
                 ppu->dot_counter = 0;
-                ppu_update_stat(ppu);
-                // ppu_check_stat_interrupt(ppu);
+                // Update STAT mode bits first
+                uint8_t stat = bus_read8(ppu->bus, STAT);
+                bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
+                ppu_check_stat_interrupts(ppu);
             }
             break;
 
         case MODE_HBLANK:
-            // remaining time to complete scanline
             if (ppu->dot_counter >= 456 - (80 + 172)) {
                 ppu->current_ly++;
                 ppu->dot_counter = 0;
-                ppu_check_lyc(ppu);
-
-                // printf("HBLANK complete. new LY: %d\n", ppu->current_ly);
-                if (ppu->current_ly == 144) {
-                    // printf("entering VBLANK!\n");
-                    // enter vblank when we hit scanline 144
-                    ppu->mode = MODE_VBLANK;
-                    // request vblank interrupt
-                    uint8_t int_flag = bus_read8(ppu->bus, 0xFF0F);
-                    bus_write8(ppu->bus, 0xFF0F, int_flag | 0x01);
-                    ppu_check_lyc(ppu);
-                } else {
-                    // start next scanline with oam scan
-                    ppu->mode = MODE_OAM_SCAN;
-                }
                 
-                ppu_update_stat(ppu);
-                // ppu_check_stat_interrupt(ppu);
-                // ppu_check_lyc(ppu);
+                if (ppu->current_ly == 144) {
+                    ppu->mode = MODE_VBLANK;
+                    // Set both the mode bits and request VBLANK interrupt
+                    uint8_t stat = bus_read8(ppu->bus, STAT);
+                    bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
+                    uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
+                    bus_write8(ppu->bus, 0xFF0F, if_reg | 0x01);
+                    ppu_check_stat_interrupts(ppu);
+                } else {
+                    ppu->mode = MODE_OAM_SCAN;
+                    // Update STAT mode bits first
+                    uint8_t stat = bus_read8(ppu->bus, STAT);
+                    bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
+                    ppu_check_stat_interrupts(ppu);
+                }
             }
             break;
 
         case MODE_VBLANK:
-            // printf("in VBLANK - current dot_counter: %d, current LY: %d\n", ppu->dot_counter, ppu->current_ly);
-            
             if (ppu->dot_counter >= 456) {
                 ppu->dot_counter = 0;
                 ppu->current_ly++;
-                ppu_check_lyc(ppu);
-                // check if vblank is finished
+                ppu_check_stat_interrupts(ppu);
+
                 if (ppu->current_ly >= 154) {
-                    // notify display that frame is ready before clearing buffer
-                    // printf("VBLANK complete - starting new frame\n");
-                    if (ppu->frame_complete_callback != NULL) {
-                        // printf("calling frame complete callback\n");
+                    if (ppu->frame_complete_callback) {
                         ppu->frame_complete_callback(ppu->screen_buffer);
-                    } else {
-                        // printf("no frame callback set\n");
                     }
                     
                     ppu->current_ly = 0;
                     ppu->mode = MODE_OAM_SCAN;
-                    // clear screen buffer for next frame
                     memset(ppu->screen_buffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
-                    ppu_update_stat(ppu);
-                    // ppu_check_stat_interrupt(ppu);
-                } else {
-                    ppu_check_lyc(ppu);
+                    // Update STAT mode bits first
+                    uint8_t stat = bus_read8(ppu->bus, STAT);
+                    bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
+                    ppu_check_stat_interrupts(ppu);
                 }
-            } else if (ppu->dot_counter == 1) {
-                // trigger vblank interrupt on first dot
-                uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
-                bus_write8(ppu->bus, 0xFF0F, if_reg | 0x01);
             }
             break;
-            
-    
     }
-
 }

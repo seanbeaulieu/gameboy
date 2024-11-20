@@ -59,7 +59,8 @@ void ppu_draw(ppu *ppu);
 
 // interrupts
 void ppu_check_lyc(ppu *ppu);
-void ppu_check_stat_interrupt(ppu *ppu);
+// void ppu_check_stat_interrupt(ppu *ppu);
+// static bool get_stat_interrupt_line(ppu *ppu);
 void ppu_update_stat(ppu *ppu);
 
 // tile and sprite rendering

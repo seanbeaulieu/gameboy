@@ -112,29 +112,21 @@ void cpu_handle_interrupts(cpu *cpu) {
     // if (requested) {
     //     printf("requested is true ");
     // }
-    
+
     if (requested & 0x01) {  // Vblank
         bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x01); // Clear the corresponding IF bit
-        
-        // Push the current PC value to the stack
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
-        
         // Set PC to the Vblank interrupt handler address
         cpu->registers.pc = 0x0040;
     } else if (requested & 0x02) {  // LCD Status
         bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x02); // Clear the corresponding IF bit
-        
-        // Push the current PC value to the stack
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
-        
         // Set PC to the LCD Status interrupt handler address
         cpu->registers.pc = 0x0048;
     } else if (requested & 0x04) {  // Timer Overflow
         bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x04); // Clear the corresponding IF bit
-        
-        // Push the current PC value to the stack
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
         
@@ -142,8 +134,6 @@ void cpu_handle_interrupts(cpu *cpu) {
         cpu->registers.pc = 0x0050;
     } else if (requested & 0x08) {  // Serial Link
         bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x08); // Clear the corresponding IF bit
-        
-        // Push the current PC value to the stack
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
         
@@ -151,10 +141,9 @@ void cpu_handle_interrupts(cpu *cpu) {
         cpu->registers.pc = 0x0058;
     } else if (requested & 0x10) {  // Joypad Press
         bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x10); // Clear the corresponding IF bit
-        
-        // Push the current PC value to the stack
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
+      
         
         // Set PC to the Joypad Press interrupt handler address
         cpu->registers.pc = 0x0060;
@@ -228,26 +217,6 @@ uint8_t op_tcycles[0x100] = {
 	12,12, 8, 4, 0,16, 8,32,12, 8,16, 4, 0, 0, 8,32     // 0xF0
 };
 
-uint8_t cb_op_tcycles[0x100] = {
-    //   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0x00
-    8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0x10
-    8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0x20
-    8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0x30
-    8, 8, 8, 8, 8, 8,12, 8, 8, 8, 8, 8, 8, 8,12, 8,    // 0x40
-    8, 8, 8, 8, 8, 8,12, 8, 8, 8, 8, 8, 8, 8,12, 8,    // 0x50
-    8, 8, 8, 8, 8, 8,12, 8, 8, 8, 8, 8, 8, 8,12, 8,    // 0x60
-    8, 8, 8, 8, 8, 8,12, 8, 8, 8, 8, 8, 8, 8,12, 8,    // 0x70
-    8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0x80
-    8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0x90
-    8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0xA0
-    8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0xB0
-    8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0xC0
-    8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0xD0
-    8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,    // 0xE0
-    8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8     // 0xF0
-};
-
 // step function
 
 void cpu_step(cpu *cpu) {
@@ -261,7 +230,6 @@ void cpu_step(cpu *cpu) {
     // check if CPU is halted
     if (cpu->halted) {
         // while halted, only update timers and check for interrupts
-        // printf("in cpu->halted is true");
         
         // cpu_update_timers(cpu);
         
@@ -285,11 +253,6 @@ void cpu_step(cpu *cpu) {
     // set the counter for this instruction
     cpu->counter = op_tcycles[opcode];  // do not convert T-cycles to M-cycles
     // printf("counter: %d \n", cpu->counter);
-
-    // if (opcode == 0xCB) {
-    //     uint8_t cb_opcode = bus_read8(&cpu->bus, cpu->registers.pc++);
-    //     cpu->counter = cb_op_tcycles[cb_opcode];
-    // }
 
     // execute the instruction
     // cb instructions are handled in instruction.c, counter and increment are done in 0xCB
