@@ -345,9 +345,14 @@ void ppu_check_stat_interrupts(ppu *ppu) {
     
     // LY=LYC check
     uint8_t lyc = bus_read8(ppu->bus, LYC);
+    // printf("checking stats - LY:%d LYC:%d STAT before:%02X\n", 
+    //        ppu->current_ly, lyc, stat);
+
     if (ppu->current_ly == lyc) {
         stat |= STAT_LYC_EQUAL;
+        // printf("LY=LYC match. STAT after setting equal bit:%02X\n", stat);
         if (stat & STAT_LYC_INT) {
+            // printf("LYC interrupt enabled in STAT\n");
             interrupt_requested = true;
         }
     } else {
@@ -367,12 +372,15 @@ void ppu_check_stat_interrupts(ppu *ppu) {
             break;
     }
 
-    // Write back STAT updates
+    // write back STAT updates
     bus_write8(ppu->bus, STAT, stat);
+    // printf("wrote STAT:%02X back to memory\n", stat);
 
-    // Request STAT interrupt if needed
+    // request STAT interrupt if needed
     if (interrupt_requested) {
-        printf("stat interrupt requested. Current LY:%d\n", ppu->current_ly);
+        // printf("stat interrupt requested. Current LY:%d\n", ppu->current_ly);
+        // printf("IF before:%02X after:%02X\n", 
+        //        if_reg, if_reg | 0x02);
         bus_write8(ppu->bus, 0xFF0F, if_reg | 0x02);
     }
 }
@@ -645,7 +653,7 @@ void ppu_step(ppu *ppu) {
         case MODE_OAM_SCAN:
             if (ppu->dot_counter == 1) {
                 ppu_oam_scan(ppu);
-                ppu_check_stat_interrupts(ppu);
+                //ppu_check_stat_interrupts(ppu);
             }
             if (ppu->dot_counter >= 80) {
                 ppu->mode = MODE_DRAWING;
@@ -653,7 +661,7 @@ void ppu_step(ppu *ppu) {
                 // Update STAT mode bits first
                 uint8_t stat = bus_read8(ppu->bus, STAT);
                 bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
-                ppu_check_stat_interrupts(ppu);
+                //ppu_check_stat_interrupts(ppu);
             }
             break;
 
@@ -665,7 +673,7 @@ void ppu_step(ppu *ppu) {
                 // Update STAT mode bits first
                 uint8_t stat = bus_read8(ppu->bus, STAT);
                 bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
-                ppu_check_stat_interrupts(ppu);
+                //ppu_check_stat_interrupts(ppu);
             }
             break;
 
@@ -681,13 +689,13 @@ void ppu_step(ppu *ppu) {
                     bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
                     uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
                     bus_write8(ppu->bus, 0xFF0F, if_reg | 0x01);
-                    ppu_check_stat_interrupts(ppu);
+                    //ppu_check_stat_interrupts(ppu);
                 } else {
                     ppu->mode = MODE_OAM_SCAN;
                     // Update STAT mode bits first
                     uint8_t stat = bus_read8(ppu->bus, STAT);
                     bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
-                    ppu_check_stat_interrupts(ppu);
+                    //ppu_check_stat_interrupts(ppu);
                 }
             }
             break;
@@ -696,7 +704,7 @@ void ppu_step(ppu *ppu) {
             if (ppu->dot_counter >= 456) {
                 ppu->dot_counter = 0;
                 ppu->current_ly++;
-                ppu_check_stat_interrupts(ppu);
+                //ppu_check_stat_interrupts(ppu);
 
                 if (ppu->current_ly >= 154) {
                     if (ppu->frame_complete_callback) {
@@ -709,7 +717,7 @@ void ppu_step(ppu *ppu) {
                     // Update STAT mode bits first
                     uint8_t stat = bus_read8(ppu->bus, STAT);
                     bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
-                    ppu_check_stat_interrupts(ppu);
+                    //ppu_check_stat_interrupts(ppu);
                 }
             }
             break;

@@ -108,44 +108,65 @@ void cpu_handle_interrupts(cpu *cpu) {
     // if (if_) {
     //     printf("if is true ");
     // }
+    // printf("raw values: IE=%02X IF=%02X at %04X\n", ie, if_, 0xFF0F);
     uint8_t requested = ie & if_;
     // if (requested) {
     //     printf("requested is true ");
     // }
 
+
+    // cpu->halted = 0;
+    cpu->ime = 0;
+
     if (requested & 0x01) {  // Vblank
-        bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x01); // Clear the corresponding IF bit
+        bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x01); 
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
-        // Set PC to the Vblank interrupt handler address
+
+        // cpu->ime = 0;
+        // cpu->halted = 0;
+        // set PC to the Vblank interrupt handler address
         cpu->registers.pc = 0x0040;
-    } else if (requested & 0x02) {  // LCD Status
-        bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x02); // Clear the corresponding IF bit
+    } else if (requested & 0x02) {  // LCD status
+        // printf("handling STAT interrupt, PC was: %04X\n", cpu->registers.pc);
+        // printf("writing to IF at addr=%04X clearing bit 1\n", 0xFF0F);
+        // uint16_t if_addr = 0xFF0F;
+        // // printf("about to write to IF: addr=0x%04X\n", if_addr);
+        // bus_write8(&cpu->bus, if_addr, if_ & ~0x02);
+        bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x02); 
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
-        // Set PC to the LCD Status interrupt handler address
+
+        //cpu->ime = 0;
+        // cpu->halted = 0;
+        // set PC to the LCD Status interrupt handler address
         cpu->registers.pc = 0x0048;
-    } else if (requested & 0x04) {  // Timer Overflow
-        bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x04); // Clear the corresponding IF bit
+    } else if (requested & 0x04) {  // timer Overflow
+        bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x04); 
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
         
-        // Set PC to the Timer Overflow interrupt handler address
+        //cpu->ime = 0;
+        // cpu->halted = 0;
+        // set PC to the Timer Overflow interrupt handler address
         cpu->registers.pc = 0x0050;
-    } else if (requested & 0x08) {  // Serial Link
-        bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x08); // Clear the corresponding IF bit
+    } else if (requested & 0x08) {  // serial Link
+        bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x08); 
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
         
-        // Set PC to the Serial Link interrupt handler address
+        //cpu->ime = 0;
+        // cpu->halted = 0;
+        // set PC to the Serial Link interrupt handler address
         cpu->registers.pc = 0x0058;
-    } else if (requested & 0x10) {  // Joypad Press
-        bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x10); // Clear the corresponding IF bit
+    } else if (requested & 0x10) {  // joypad Press
+        bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x10);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
       
-        
-        // Set PC to the Joypad Press interrupt handler address
+        //cpu->ime = 0;
+        // cpu->halted = 0;
+        // set PC to the Joypad Press interrupt handler address
         cpu->registers.pc = 0x0060;
     }
 }
@@ -154,7 +175,7 @@ void cpu_handle_interrupts(cpu *cpu) {
 // update timers
 // https://gbdev.io/pandocs/Timer_and_Divider_Registers.html
 void cpu_update_timers(cpu *cpu) {
-    // Increment the DIV register at a fixed rate (16384 Hz)
+    // increment the DIV register at a fixed rate (16384 Hz)
     if (cpu->count % 256 == 0) {
         // printf("div timer incremented ");
         bus_increment_div(&cpu->bus);
@@ -221,31 +242,41 @@ uint8_t op_tcycles[0x100] = {
 
 void cpu_step(cpu *cpu) {
    
-    // handle interrupts first
-    if (cpu->ime) {
-        // printf("cpu->ime is true");
-        cpu_handle_interrupts(cpu);
-    }
+    uint8_t ie = bus_read8(&cpu->bus, 0xFFFF); // interrupt Enable
+    uint8_t if_ = bus_read8(&cpu->bus, 0xFF0F); // interrupt Flag
 
-    // check if CPU is halted
-    if (cpu->halted) {
-        // while halted, only update timers and check for interrupts
-        
-        // cpu_update_timers(cpu);
-        
-        // check if any enabled interrupt is pending
-        uint8_t ie = bus_read8(&cpu->bus, 0xFFFF); // interrupt Enable
-        uint8_t if_ = bus_read8(&cpu->bus, 0xFF0F); // interrupt Flag
-        if (ie & if_) {
-            // an enabled interrupt is pending, exit halt state
-            cpu->halted = 0;
-        } else {
-            // still halted, don't execute an instruction
-            cpu->registers.pc++;
-            cpu->count++;  // increment the total cycle count
-            return;
+    if ((cpu->ime || cpu->halted) && (ie & if_ & 0x1F)) {
+        cpu->halted = 0;
+        if (cpu->ime) {
+            cpu_handle_interrupts(cpu);
         }
     }
+    // handle interrupts first
+    // if (cpu->ime) {
+    //     // printf("cpu->ime is true");
+    //     cpu_handle_interrupts(cpu);
+    // }
+
+    // // check if CPU is halted
+    // if (cpu->halted) {
+    //     // while halted, only update timers and check for interrupts
+        
+    //     // cpu_update_timers(cpu);
+        
+    //     // check if any enabled interrupt is pending
+    //     uint8_t ie = bus_read8(&cpu->bus, 0xFFFF); // interrupt Enable
+    //     uint8_t if_ = bus_read8(&cpu->bus, 0xFF0F); // interrupt Flag
+    //     if (ie & if_) {
+    //         // an enabled interrupt is pending, exit halt state
+    //         // cpu->halted = 0;
+    //         cpu_handle_interrupts(cpu);
+    //     } else {
+    //         // still halted, don't execute an instruction
+    //         cpu->registers.pc++;
+    //         cpu->count++;  // increment the total cycle count
+    //         return;
+    //     }
+    // }
 
     // fetch the next instruction
     uint8_t opcode = bus_read8(&cpu->bus, cpu->registers.pc++);

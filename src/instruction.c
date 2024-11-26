@@ -997,6 +997,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
                 // LDH (a8), A
                 case 0x0: {
                     n = bus_read8(&cpu->bus, cpu->registers.pc++);
+                    // printf("LDH write: writing 0x%02X to 0xFF%02X\n", cpu->registers.a, n);
                     bus_write8(&cpu->bus, 0xFF00 + n, cpu->registers.a);
                     break;
                 }
