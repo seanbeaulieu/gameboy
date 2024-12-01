@@ -167,6 +167,10 @@ void ppu_init(ppu *ppu, bus *bus) {
     ppu->dot_counter = 0;
     ppu->sprite_count = 0;
     ppu->stat_irq_blocked = 0;
+
+    // window line counter
+    ppu->window_visible = false;
+    ppu->window_line_counter = 0;
     
     
     memset(ppu->screen_buffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
@@ -181,162 +185,6 @@ void ppu_set_frame_callback(ppu *ppu, void (*callback)(uint8_t *buffer)) {
     ppu->frame_complete_callback = callback;
     printf("Callback set - current ptr: %p\n", (void*)ppu->frame_complete_callback);
 }
-
-// void ppu_check_lyc(ppu *ppu) {
-//     uint8_t stat = bus_read8(ppu->bus, STAT);
-//     uint8_t lyc = bus_read8(ppu->bus, LYC);
-    
-//     if (ppu->current_ly == lyc) {
-//         stat |= STAT_LYC_EQUAL;
-//         // fire only if LYC enable bit is on and STAT IRQ isn't currently blocked
-//         if (stat & STAT_LYC_INT && !ppu->stat_irq_blocked) {
-//             // trigger STAT interrupt
-//             uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
-//             bus_write8(ppu->bus, 0xFF0F, if_reg | 0x02);
-//             ppu->stat_irq_blocked = 1;
-//         }
-//     } else {
-//         stat &= ~STAT_LYC_EQUAL;
-//         ppu->stat_irq_blocked = 0;
-//     }
-    
-//     bus_write8(ppu->bus, STAT, stat);
-// }
-
-// void ppu_check_stat_interrupt(ppu *ppu) {
-//     uint8_t stat = bus_read8(ppu->bus, STAT);
-//     uint8_t request = 0;
-    
-//     // check each stat interrupt condition
-//     switch(ppu->mode) {
-//         case MODE_HBLANK:
-//             request = (stat & STAT_HBLANK_INT);
-//             break;
-//         case MODE_VBLANK:
-//             request = (stat & STAT_VBLANK_INT);
-//             break;
-//         case MODE_OAM_SCAN:
-//             request = (stat & STAT_OAM_INT);
-//             break;
-//     }
-    
-//     // if lyc=ly is enabled and matches, that's another condition
-//     if ((stat & STAT_LYC_INT) && (stat & STAT_LYC_EQUAL)) {
-//         request = 1;
-//     }
-    
-//     // if any condition is met and interrupts aren't blocked
-//     if (request && !ppu->stat_irq_blocked) {
-//         uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
-//         bus_write8(ppu->bus, 0xFF0F, if_reg | 0x02);
-//         ppu->stat_irq_blocked = 1;
-//     } else if (!request) {
-//         ppu->stat_irq_blocked = 0;
-//     }
-// }
-
-// void ppu_update_stat(ppu *ppu) {
-//     uint8_t stat = bus_read8(ppu->bus, STAT);
-//     // clear mode bits (0-1) and set new mode
-//     stat = (stat & 0xFC) | ppu->mode;
-//     // update coincidence flag (bit 2) based on LY=LYC comparison
-//     if (ppu->current_ly == bus_read8(ppu->bus, LYC)) {
-//         stat |= (1 << 2);
-//     } else {
-//         stat &= ~(1 << 2);
-//     }
-//     ppu->bus->memory[0xFF41] = stat;
-// }
-
-// void ppu_update_stat(ppu *ppu) {
-//     // first update the stat register
-//     uint8_t stat = bus_read8(ppu->bus, STAT);
-    
-//     // clear mode bits (0-1) and set new mode
-//     stat = (stat & 0xFC) | ppu->mode;
-    
-//     // // update coincidence flag (bit 2)
-//     // bool coincidence = (ppu->current_ly == bus_read8(ppu->bus, LYC));
-//     // if (coincidence) {
-//     //     stat |= (1 << 2);
-//     // } else {
-//     //     stat &= ~(1 << 2);
-//     // }
-//     // ppu->bus->memory[0xFF41] = stat;
-
-//     ppu_check_lyc(ppu);
-
-//     // now check interrupt conditions
-//     // only enables interrupts if the "condition enabler" is true
-//     uint8_t request = 0;
-//     switch(ppu->mode) {
-//         case MODE_HBLANK:
-//             request = (stat & STAT_HBLANK_INT);
-//             break;
-//         case MODE_VBLANK:
-//             request = (stat & STAT_VBLANK_INT);
-//             break;
-//         case MODE_OAM_SCAN:
-//             request = (stat & STAT_OAM_INT);
-//             break;
-//     }
-    
-//     // if lyc=ly is enabled and matches, that's another condition
-//     // if ((stat & STAT_LYC_INT) && coincidence) {
-//     //     request = 1;
-//     // }
-    
-//     // if any condition is met and interrupts aren't blocked
-//     if (request && !ppu->stat_irq_blocked) {
-//         printf("stat interrupts triggered");
-//         uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
-//         bus_write8(ppu->bus, 0xFF0F, if_reg | 0x02);
-//         ppu->stat_irq_blocked = 1;
-//     } else if (!request) {
-//         ppu->stat_irq_blocked = 0;
-//     }
-// }
-
-// void ppu_check_stat_interrupts(ppu *ppu) {
-//     uint8_t stat = bus_read8(ppu->bus, STAT);
-//     uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
-//     bool interrupt_requested = false;
-    
-//     // ly=lyc coincidence
-//     uint8_t lyc = bus_read8(ppu->bus, LYC);
-    
-//     // update coincidence flag
-//     if (ppu->current_ly == lyc) {
-//         stat |= STAT_LYC_EQUAL;
-//         // trigger interrupt if enabled
-//         if (stat & STAT_LYC_INT) {
-//             interrupt_requested = true;
-//         }
-//     } else {
-//         stat &= ~STAT_LYC_EQUAL;
-//     }
-
-//     // check mode-based interrupts
-//     switch(ppu->mode) {
-//         case MODE_HBLANK:
-//             if (stat & STAT_HBLANK_INT) interrupt_requested = true;
-//             break;
-//         case MODE_VBLANK:
-//             if (stat & STAT_VBLANK_INT) interrupt_requested = true;
-//             break;
-//         case MODE_OAM_SCAN:
-//             if (stat & STAT_OAM_INT) interrupt_requested = true;
-//             break;
-//     }
-
-//     // write back updated STAT
-//     bus_write8(ppu->bus, STAT, stat);
-
-//     // set STAT interrupt if any conditions met
-//     if (interrupt_requested) {
-//         bus_write8(ppu->bus, 0xFF0F, if_reg | 0x02);  // set bit 1 for STAT interrupt
-//     }
-// }
 
 void ppu_check_stat_interrupts(ppu *ppu) {
     uint8_t stat = bus_read8(ppu->bus, STAT);
@@ -443,13 +291,6 @@ void ppu_oam_scan(ppu *ppu) {
 
 void ppu_render_scanline(ppu *ppu) {
     uint8_t lcdc = bus_read8(ppu->bus, LCDC);
-
-    // printf("lcdc: ");
-    // for (int i = 7; i >= 0; i--) {
-    //     printf("%d", (lcdc >> i) & 1);
-    // }
-    // printf("\n");
-
     uint8_t *scanline = &ppu->screen_buffer[ppu->current_ly * SCREEN_WIDTH];
     
     // if background is enabled
@@ -504,65 +345,61 @@ void ppu_render_scanline(ppu *ppu) {
             scanline[x] = 0;
         }
     }
-    
-    // render window if enabled
+
+    // The window becomes visible (if enabled) when positions are set in range WX=0..166, WY=0..143. 
+    // A postion of WX=7, WY=0 locates the window at upper left, it is then completly covering normal background.
     if ((lcdc & LCDC_WINDOW_ON) && (lcdc & LCDC_ENABLE)) {
         uint8_t wy = bus_read8(ppu->bus, WY);
+        uint8_t wx = bus_read8(ppu->bus, WX);
         
+        // check if window coordinates are in valid range
+        bool in_range = (wx <= 166 && wy <= 143 && ppu->current_ly >= wy);
         
-        if (ppu->current_ly >= wy) {
-            // similar to background rendering but for window
+        if (in_range) {
+            // calculate effective window x position
+            uint8_t window_x = wx - 7;
             
+            // calculate window y using line counter
+            uint8_t window_y = ppu->window_line_counter;
+            uint8_t tile_y = window_y >> 3;
+            uint8_t fine_y = window_y & 7;
             
-            uint8_t wx = bus_read8(ppu->bus, WX) - 7;
+            // get window tile map
+            uint16_t window_map = (lcdc & LCDC_WINDOW_MAP) ? 0x9C00 : 0x9800;
             
-            if (ppu->current_ly >= wy) {
-                // calculate which line of the window we're drawing
-                uint8_t window_y = ppu->current_ly - wy;
-                uint8_t tile_y = window_y >> 3;    // divide by 8
-                uint8_t fine_y = window_y & 7;     // y % 8
+            // render window pixels
+            for (int x = 0; x < SCREEN_WIDTH - window_x; x++) {
+                int screen_x = window_x + x;
                 
-                // get window tile map address
-                uint16_t window_map = (lcdc & LCDC_WINDOW_MAP) ? 0x9C00 : 0x9800;
-                
-                // render window pixels for this scanline
-                for (int x = 0; x < SCREEN_WIDTH - wx; x++) {
-                    int screen_x = wx + x;
+                if (screen_x >= 0 && screen_x < SCREEN_WIDTH) {
+                    uint8_t tile_x = x >> 3;
+                    uint8_t fine_x = x & 7;
                     
-                    // only draw if we're within screen bounds
-                    if (screen_x >= 0 && screen_x < SCREEN_WIDTH) {
-                        uint8_t tile_x = x >> 3;
-                        uint8_t fine_x = x & 7;
-                        
-                        // get tile number from window map
-                        uint16_t tile_addr = window_map + (tile_y * 32) + tile_x;
-                        uint8_t tile_num = ppu->vram[tile_addr - VRAM_START];
-                        
-                        // get tile data address (same addressing modes as background)
-                        uint16_t tile_data;
-                        if (lcdc & LCDC_TILE_SEL) {
-                            tile_data = 0x8000 + (tile_num * 16);
-                        } else {
-                            tile_data = 0x9000 + ((int8_t)tile_num * 16);
-                        }
-                        
-                        // get the two bytes for this line of the tile
-                        uint8_t byte1 = ppu->vram[(tile_data + (fine_y * 2)) - VRAM_START];
-                        uint8_t byte2 = ppu->vram[(tile_data + (fine_y * 2) + 1) - VRAM_START];
-                        
-                        // combine bits for color
-                        uint8_t bit = 7 - fine_x;
-                        uint8_t color = ((byte1 >> bit) & 1) | (((byte2 >> bit) & 1) << 1);
-                        
-                        // apply background palette (window uses same palette as background)
-                        uint8_t bgp = bus_read8(ppu->bus, BGP);
-                        color = (bgp >> (color * 2)) & 3;
-                        
-                        // write to screen buffer
-                        ppu->screen_buffer[ppu->current_ly * SCREEN_WIDTH + screen_x] = color;
+                    uint16_t tile_addr = window_map + (tile_y * 32) + tile_x;
+                    uint8_t tile_num = ppu->vram[tile_addr - VRAM_START];
+                    
+                    uint16_t tile_data;
+                    if (lcdc & LCDC_TILE_SEL) {
+                        tile_data = 0x8000 + (tile_num * 16);
+                    } else {
+                        tile_data = 0x9000 + ((int8_t)tile_num * 16);
                     }
+                    
+                    uint8_t byte1 = ppu->vram[(tile_data + (fine_y * 2)) - VRAM_START];
+                    uint8_t byte2 = ppu->vram[(tile_data + (fine_y * 2) + 1) - VRAM_START];
+                    
+                    uint8_t bit = 7 - fine_x;
+                    uint8_t color = ((byte1 >> bit) & 1) | (((byte2 >> bit) & 1) << 1);
+                    
+                    uint8_t bgp = bus_read8(ppu->bus, BGP);
+                    color = (bgp >> (color * 2)) & 3;
+                    
+                    ppu->screen_buffer[ppu->current_ly * SCREEN_WIDTH + screen_x] = color;
                 }
             }
+            
+            // increment window counter when window was actually visible and drawn
+            ppu->window_line_counter++;
         }
     }
     
@@ -585,7 +422,7 @@ void ppu_render_scanline(ppu *ppu) {
         }
 
         // render sprites from highest to lowest priority (reverse order)
-        // this way, lower priority sprites are drawn first and can be overwritten
+        // lower priority sprites are drawn first and can be overwritten
         for (int i = ppu->sprite_count - 1; i >= 0; i--) {
             sprite_data *sprite = &ppu->sprite_buffer[i];
             
@@ -598,7 +435,14 @@ void ppu_render_scanline(ppu *ppu) {
             }
             
             // get tile data address
-            uint16_t tile_addr = 0x8000 + (sprite->tile_num * 16) + (line * 2);
+            // uint16_t tile_addr = 0x8000 + (sprite->tile_num * 16) + (line * 2);
+
+            uint8_t adjusted_tile_num = sprite->tile_num;
+            if (lcdc & LCDC_OBJ_SIZE) {
+                // mask off bit 0 for 8x16 sprites
+                adjusted_tile_num &= 0xFE;  // clear lowest bit
+            }
+            uint16_t tile_addr = 0x8000 + (adjusted_tile_num * 16) + (line * 2);
             
             // get tile data
             uint8_t byte1 = ppu->vram[tile_addr - VRAM_START];
@@ -643,6 +487,7 @@ void ppu_render_scanline(ppu *ppu) {
 
 void ppu_step(ppu *ppu) {
     if (!(bus_read8(ppu->bus, LCDC) & LCDC_ENABLE)) {
+        ppu->window_line_counter = 0;
         return;
     }
     
@@ -651,10 +496,6 @@ void ppu_step(ppu *ppu) {
 
     switch(ppu->mode) {
         case MODE_OAM_SCAN:
-            if (ppu->dot_counter == 1) {
-                // ppu_oam_scan(ppu);
-                // ppu_check_stat_interrupts(ppu);
-            }
             if (ppu->dot_counter >= 80) {
                 // do at end of oam scan as some flags are set during OAM mode
                 ppu_oam_scan(ppu);
@@ -712,6 +553,9 @@ void ppu_step(ppu *ppu) {
                 //ppu_check_stat_interrupts(ppu);
 
                 if (ppu->current_ly >= 154) {
+
+                    ppu->window_line_counter = 0;
+
                     if (ppu->frame_complete_callback) {
                         ppu->frame_complete_callback(ppu->screen_buffer);
                     }
