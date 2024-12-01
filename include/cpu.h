@@ -34,7 +34,7 @@ typedef struct cpu_registers {
 typedef struct cpu {
     cpu_registers registers;
     bus bus;
-    ppu ppu;
+    ppu *ppu;
     uint8_t counter;
     bool ime; // interrupt
     uint8_t halted;
@@ -42,7 +42,7 @@ typedef struct cpu {
 } cpu;
 
 
-void cpu_init(cpu_registers *registers);
+void cpu_init(cpu *cpu, ppu *ppu);
 void cpu_init_test(cpu_registers *registers);
 uint16_t cpu_read_register_16bit(cpu_registers *registers, const char *reg);
 void cpu_write_register_16bit(cpu_registers *registers, const char *reg, uint16_t value);

@@ -430,7 +430,7 @@ void ppu_oam_scan(ppu *ppu) {
                 sprite->flags = flags;
                 sprite->index = i;
                 
-                ppu->sprite_count++;
+                ppu->sprite_count++; 
             }
         }
     }
@@ -647,22 +647,25 @@ void ppu_step(ppu *ppu) {
     }
     
     ppu->dot_counter++;
-    ppu_check_stat_interrupts(ppu);
+    // ppu_check_stat_interrupts(ppu);
 
     switch(ppu->mode) {
         case MODE_OAM_SCAN:
             if (ppu->dot_counter == 1) {
-                ppu_oam_scan(ppu);
-                //ppu_check_stat_interrupts(ppu);
+                // ppu_oam_scan(ppu);
+                // ppu_check_stat_interrupts(ppu);
             }
             if (ppu->dot_counter >= 80) {
+                // do at end of oam scan as some flags are set during OAM mode
+                ppu_oam_scan(ppu);
                 ppu->mode = MODE_DRAWING;
                 ppu->dot_counter = 0;
                 // Update STAT mode bits first
                 uint8_t stat = bus_read8(ppu->bus, STAT);
                 bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
-                //ppu_check_stat_interrupts(ppu);
+                ppu_check_stat_interrupts(ppu);
             }
+            //ppu_check_stat_interrupts(ppu);
             break;
 
         case MODE_DRAWING:
@@ -673,8 +676,9 @@ void ppu_step(ppu *ppu) {
                 // Update STAT mode bits first
                 uint8_t stat = bus_read8(ppu->bus, STAT);
                 bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
-                //ppu_check_stat_interrupts(ppu);
+                ppu_check_stat_interrupts(ppu);
             }
+            //ppu_check_stat_interrupts(ppu);
             break;
 
         case MODE_HBLANK:
@@ -689,15 +693,16 @@ void ppu_step(ppu *ppu) {
                     bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
                     uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
                     bus_write8(ppu->bus, 0xFF0F, if_reg | 0x01);
-                    //ppu_check_stat_interrupts(ppu);
+                    ppu_check_stat_interrupts(ppu);
                 } else {
                     ppu->mode = MODE_OAM_SCAN;
                     // Update STAT mode bits first
                     uint8_t stat = bus_read8(ppu->bus, STAT);
                     bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
-                    //ppu_check_stat_interrupts(ppu);
+                    ppu_check_stat_interrupts(ppu);
                 }
             }
+            //ppu_check_stat_interrupts(ppu);
             break;
 
         case MODE_VBLANK:
@@ -717,9 +722,11 @@ void ppu_step(ppu *ppu) {
                     // Update STAT mode bits first
                     uint8_t stat = bus_read8(ppu->bus, STAT);
                     bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
-                    //ppu_check_stat_interrupts(ppu);
+                    ppu_check_stat_interrupts(ppu);
                 }
+                // ppu_check_stat_interrupts(ppu);
             }
+            //ppu_check_stat_interrupts(ppu);
             break;
     }
 }

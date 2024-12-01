@@ -135,14 +135,17 @@ int main(int argc, char *argv[]) {
     cpu gameboy;
     ppu PPU;
     memset(&gameboy, 0, sizeof(cpu));
-    // init
-    cpu_init(&gameboy.registers);
-    cpu_init_test(&gameboy.registers);
+
+    // init everything
     bus_init(&gameboy.bus);
-    // set up PPU frame callback
+    cpu_init(&gameboy, &PPU);  // pass in the PPU pointer
+    cpu_init_test(&gameboy.registers);
+
+    // setup PPU
     ppu_set_frame_callback(&PPU, display_frame);
-    printf("callback set: %s\n", PPU.frame_complete_callback != NULL ? "yes" : "no");
     ppu_init(&PPU, &gameboy.bus);
+    printf("callback set: %s\n", PPU.frame_complete_callback != NULL ? "yes" : "no");
+    // ppu_init(&PPU, &gameboy.bus);
 
     // open log file
     log_file = fopen("logfile.txt", "w");
@@ -185,9 +188,9 @@ int main(int argc, char *argv[]) {
             }
         }
         // debug_print(&gameboy);
-        // existing emulation code
+        
         cpu_step(&gameboy);
-        ppu_step(&PPU);
+        // ppu_step(&PPU);
         
     }
 

@@ -1,5 +1,6 @@
 #include "../include/cpu.h"
 #include "../include/bus.h"
+#include "../include/ppu.h"
 #include "../include/instruction.h"
 #include <string.h>
 #include <stdio.h>
@@ -12,8 +13,9 @@
 
 // initialize cpu registers
 // todo
-void cpu_init(cpu_registers *registers) {
-    memset(registers, 0, sizeof(cpu_registers));
+void cpu_init(cpu *cpu, ppu *ppu) {
+    memset(&cpu->registers, 0, sizeof(cpu_registers));
+    cpu->ppu = ppu;
 }
 
 // test init to set to boot rom at 0x100
@@ -123,7 +125,7 @@ void cpu_handle_interrupts(cpu *cpu) {
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
 
-        // cpu->ime = 0;
+        //cpu->ime = 0;
         // cpu->halted = 0;
         // set PC to the Vblank interrupt handler address
         cpu->registers.pc = 0x0040;
@@ -164,7 +166,7 @@ void cpu_handle_interrupts(cpu *cpu) {
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
       
-        //cpu->ime = 0;
+        // cpu->ime = 0;
         // cpu->halted = 0;
         // set PC to the Joypad Press interrupt handler address
         cpu->registers.pc = 0x0060;
@@ -245,6 +247,7 @@ void cpu_step(cpu *cpu) {
     uint8_t ie = bus_read8(&cpu->bus, 0xFFFF); // interrupt Enable
     uint8_t if_ = bus_read8(&cpu->bus, 0xFF0F); // interrupt Flag
 
+    // if ((cpu->ime || cpu->halted) && (ie & if_ & 0x1F)) {
     if ((cpu->ime || cpu->halted) && (ie & if_ & 0x1F)) {
         cpu->halted = 0;
         if (cpu->ime) {
@@ -283,6 +286,10 @@ void cpu_step(cpu *cpu) {
     
     // set the counter for this instruction
     cpu->counter = op_tcycles[opcode];  // do not convert T-cycles to M-cycles
+    uint8_t m_cycles = op_tcycles[opcode] / 4;
+    for (int i = 0; i < m_cycles; i++) {
+        ppu_step(cpu->ppu);
+    }
     // printf("counter: %d \n", cpu->counter);
 
     // execute the instruction
