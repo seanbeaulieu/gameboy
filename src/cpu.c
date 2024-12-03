@@ -177,13 +177,12 @@ void cpu_handle_interrupts(cpu *cpu) {
 // update timers
 // https://gbdev.io/pandocs/Timer_and_Divider_Registers.html
 void cpu_update_timers(cpu *cpu) {
-    // increment the DIV register at a fixed rate (16384 Hz)
+    // increment the DIV register at a fixed rate of 16384 Hz
     if (cpu->count % 256 == 0) {
         // printf("div timer incremented ");
         bus_increment_div(&cpu->bus);
     }
 
-    // this doesn't work?
     // check if the timer is enabled (TAC bit 2)
     uint8_t tac = bus_read8(&cpu->bus, 0xFF07);
     // printf("tac & 0x04: %d\n", (tac & 0x04));
@@ -285,8 +284,11 @@ void cpu_step(cpu *cpu) {
     uint8_t opcode = bus_read8(&cpu->bus, cpu->registers.pc++);
     
     // set the counter for this instruction
-    cpu->counter = op_tcycles[opcode];  // do not convert T-cycles to M-cycles
+    cpu->counter = op_tcycles[opcode]; 
+    // convert T-cycles to M-cycles
     uint8_t m_cycles = op_tcycles[opcode] / 4;
+
+    // tick ppu once for each M-cycle in the opcode
     for (int i = 0; i < m_cycles; i++) {
         ppu_step(cpu->ppu);
     }

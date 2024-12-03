@@ -180,10 +180,10 @@ void ppu_init(ppu *ppu, bus *bus) {
 
 // set callback
 void ppu_set_frame_callback(ppu *ppu, void (*callback)(uint8_t *buffer)) {
-    printf("Setting callback - old ptr: %p, new ptr: %p\n", 
+    printf("setting callback - old ptr: %p, new ptr: %p\n", 
            (void*)ppu->frame_complete_callback, (void*)callback);
     ppu->frame_complete_callback = callback;
-    printf("Callback set - current ptr: %p\n", (void*)ppu->frame_complete_callback);
+    printf("callback set - current ptr: %p\n", (void*)ppu->frame_complete_callback);
 }
 
 void ppu_check_stat_interrupts(ppu *ppu) {
@@ -207,7 +207,7 @@ void ppu_check_stat_interrupts(ppu *ppu) {
         stat &= ~STAT_LYC_EQUAL;
     }
 
-    // Mode interrupts
+    // mode interrupts
     switch(ppu->mode) {
         case MODE_HBLANK:
             if (stat & STAT_HBLANK_INT) interrupt_requested = true;
@@ -294,9 +294,9 @@ void ppu_render_scanline(ppu *ppu) {
     uint8_t *scanline = &ppu->screen_buffer[ppu->current_ly * SCREEN_WIDTH];
     
     // if background is enabled
-    if (lcdc & !LCDC_BG_ON) {
-        printf("LCDC BG OFF");
-    }
+    // if (lcdc & !LCDC_BG_ON) {
+    //     printf("LCDC BG OFF");
+    // }
     if (lcdc & LCDC_BG_ON) {
         uint8_t scy = bus_read8(ppu->bus, SCY);
         uint8_t scx = bus_read8(ppu->bus, SCX);
@@ -340,7 +340,7 @@ void ppu_render_scanline(ppu *ppu) {
             scanline[x] = color;
         }
     } else {
-        // print white
+        // print white (or color 0)
         for (int x = 0; x < SCREEN_WIDTH; x++) {
             scanline[x] = 0;
         }
@@ -353,9 +353,9 @@ void ppu_render_scanline(ppu *ppu) {
         uint8_t wx = bus_read8(ppu->bus, WX);
         
         // check if window coordinates are in valid range
-        bool in_range = (wx <= 166 && wy <= 143 && ppu->current_ly >= wy);
+        // bool in_range = (wx <= 166 && wy <= 143 && ppu->current_ly >= wy);
         
-        if (in_range) {
+        if (wx <= 166 && wy <= 143 && ppu->current_ly >= wy) {
             // calculate effective window x position
             uint8_t window_x = wx - 7;
             
