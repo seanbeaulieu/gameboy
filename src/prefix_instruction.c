@@ -33,7 +33,7 @@ void prefix_instruction_execute(cpu *cpu, uint8_t opcode) {
     }
 
     switch (opcode & 0xC0) {
-        case 0x00: // Rotations and shifts
+        case 0x00: // rotations and shifts
             switch (opcode & 0xF8) {
                 case 0x00: // RLC
                     value = (value << 1) | (value >> 7);
@@ -94,7 +94,7 @@ void prefix_instruction_execute(cpu *cpu, uint8_t opcode) {
             break;
     }
 
-    // Write back the result
+    // write back the result
     if (reg_index == 0x06) {
         bus_write8(&cpu->bus, cpu_read_register_16bit(&cpu->registers, "hl"), value);
     } else {

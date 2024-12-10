@@ -29,7 +29,7 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
     };
     
 
-    // ("Executing opcode: 0x%02X\n", opcode);
+    // ("executing opcode: 0x%02X\n", opcode);
 
     switch (opcode & 0xF0) {
         case 0x00:
@@ -135,7 +135,8 @@ void instruction_execute(cpu *cpu, uint8_t opcode) {
             switch (opcode & 0x0F) {
                 // stop
                 case 0x0:  
-                    // Implement STOP instruction
+                    // implement STOP instruction
+                    cpu->halted = 1;
                     break;
                 // ld de, n16
                 case 0x1:

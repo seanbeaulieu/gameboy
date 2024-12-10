@@ -63,27 +63,27 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
     } else if (address < 0xA000) {
         // VRAM
         bus->memory[address] = value;
-        // Maybe trigger some graphics update
+        // maybe trigger some graphics update
     } else if (address < 0xC000) {
-        // External RAM
+        // external RAM
         // printf("writing to WRAM");
         bus->memory[address] = value;
     } else if (address < 0xE000) {
         // WRAM
         bus->memory[address] = value;
-        // Mirror to Echo RAM
+        // mirror to echo RAM
         if (address < 0xDE00) {
             bus->memory[address + 0x2000] = value;
         }
     } else if (address < 0xFE00) {
-        // Echo RAM - write to WRAM instead
+        // echo RAM - write to WRAM instead
         bus->memory[address - 0x2000] = value;
     } else if (address < 0xFEA0) {
         // OAM
         bus->memory[address] = value;
-        // Maybe trigger sprite update
+        // maybe trigger sprite update
     } else if (address < 0xFF00) {
-        // Not usable
+        // not usable
         
     } else if (address < 0xFF80) {
         // I/O Registers
@@ -127,7 +127,7 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
             bus->memory[address] = value;
         }
     } else {
-        // High RAM (HRAM)
+        // high RAM (HRAM)
         bus->memory[address] = value;
     }
 }
@@ -151,6 +151,8 @@ void bus_increment_div(bus *bus) {
 }
 
 // load ROM memory
+// In each cartridge, the required (or preferred) MBC type should be specified in the byte at $0147 of the ROM, as described in the cartridge header.
+// 
 
 int load_rom(bus *bus, const char *rom_path) {
     FILE *file = fopen(rom_path, "rb");
@@ -166,10 +168,10 @@ int load_rom(bus *bus, const char *rom_path) {
 
     printf("ROM file size: %ld bytes\n", file_size);
 
-    // Determine how much of the ROM to load
+    // determine how much of the ROM to load
     size_t rom_size = (file_size > 0x8000) ? 0x8000 : file_size;
 
-    // Read ROM into the correct memory region (0x0000 - 0x7FFF)
+    // read ROM into the correct memory region (0x0000 - 0x7FFF)
     size_t bytes_read = fread(bus->memory, 1, rom_size, file);
     
     if (bytes_read != rom_size) {
@@ -178,21 +180,7 @@ int load_rom(bus *bus, const char *rom_path) {
         return -1;
     }
 
-    printf("ROM loaded successfully. First byte: 0x%02X, Last byte: 0x%02X\n", 
-           bus->memory[0], bus->memory[bytes_read - 1]);
-
-    // Print the first 16 bytes of the ROM
-    // printf("First 16 bytes of ROM:\n");
-    // for (int i = 0; i < 16 && i < rom_size; i++) {
-    //     printf("%02X ", bus->memory[i]);
-    //     if ((i + 1) % 8 == 0) printf("\n");
-    // }
-    // printf("\n");
-
-    // printf("ROM Title: %.16s\n", &bus->memory[0x134]);
-    // printf("Cartridge Type: 0x%02X\n", bus->memory[0x147]);
-    // printf("ROM Size: 0x%02X\n", bus->memory[0x148]);
-    // printf("RAM Size: 0x%02X\n", bus->memory[0x149]);
+    printf("ROM loaded successfully. First byte: 0x%02X, Last byte: 0x%02X\n", bus->memory[0], bus->memory[bytes_read - 1]);
 
     fclose(file);
     return 0;

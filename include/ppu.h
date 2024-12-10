@@ -18,6 +18,7 @@ typedef struct {
     uint8_t tile_num;   // tile number in vram
     uint8_t flags;      // sprite flags (priority, flip, palette)
     uint8_t index;      // original oam index
+    
 } sprite_data;
 
 typedef struct {
@@ -35,6 +36,10 @@ typedef struct {
 
     // callback
     void (*frame_complete_callback)(uint8_t *buffer);
+
+    // window line counter
+    bool window_visible;  // tracks if window coordinates are in valid range
+    uint8_t window_line_counter;
 
     uint8_t *vram;
     uint8_t *oam;
