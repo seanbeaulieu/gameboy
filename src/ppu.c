@@ -406,20 +406,35 @@ void ppu_render_scanline(ppu *ppu) {
     // render sprites if enabled
     if (lcdc & LCDC_OBJ_ON) {
         // sort sprites by x coordinate (ascending) and OAM index for proper priority
-        for (int i = 0; i < ppu->sprite_count - 1; i++) {
-            for (int j = i + 1; j < ppu->sprite_count; j++) {
-                // compare x positions first
-                if (ppu->sprite_buffer[j].x_pos < ppu->sprite_buffer[i].x_pos ||
-                    // if x positions are equal, earlier OAM index has priority
-                    (ppu->sprite_buffer[j].x_pos == ppu->sprite_buffer[i].x_pos && 
-                    ppu->sprite_buffer[j].index < ppu->sprite_buffer[i].index)) {
-                    // swap sprites
-                    sprite_data temp = ppu->sprite_buffer[i];
-                    ppu->sprite_buffer[i] = ppu->sprite_buffer[j];
-                    ppu->sprite_buffer[j] = temp;
-                }
+        // for (int i = 0; i < ppu->sprite_count - 1; i++) {
+        //     for (int j = i + 1; j < ppu->sprite_count; j++) {
+        //         // compare x positions first
+        //         if (ppu->sprite_buffer[j].x_pos < ppu->sprite_buffer[i].x_pos ||
+        //             // if x positions are equal, earlier OAM index has priority
+        //             (ppu->sprite_buffer[j].x_pos == ppu->sprite_buffer[i].x_pos && 
+        //             ppu->sprite_buffer[j].index < ppu->sprite_buffer[i].index)) {
+        //             // swap sprites
+        //             sprite_data temp = ppu->sprite_buffer[i];
+        //             ppu->sprite_buffer[i] = ppu->sprite_buffer[j];
+        //             ppu->sprite_buffer[j] = temp;
+        //         }
+        //     }
+        // }
+
+        for (int i = 1; i < ppu->sprite_count; i++) {
+            sprite_data key = ppu->sprite_buffer[i];
+            int j = i - 1;
+            
+            while (j >= 0 && 
+                (ppu->sprite_buffer[j].x_pos > key.x_pos || 
+                (ppu->sprite_buffer[j].x_pos == key.x_pos && 
+                    ppu->sprite_buffer[j].index > key.index))) {
+                ppu->sprite_buffer[j + 1] = ppu->sprite_buffer[j];
+                j--;
             }
+            ppu->sprite_buffer[j + 1] = key;
         }
+
 
         // render sprites from highest to lowest priority (reverse order)
         // lower priority sprites are drawn first and can be overwritten
@@ -486,10 +501,25 @@ void ppu_render_scanline(ppu *ppu) {
 
 
 void ppu_step(ppu *ppu) {
+
+    // printf("PPU mode=%d cycles=%d ly=%d LCD=%s\n", 
+    //    ppu->mode, ppu->dot_counter, ppu->current_ly,
+    //    (bus_read8(ppu->bus, LCDC) & LCDC_ENABLE) ? "ON" : "OFF");
+
     if (!(bus_read8(ppu->bus, LCDC) & LCDC_ENABLE)) {
         ppu->window_line_counter = 0;
         return;
     }
+
+    //     if (!(bus_read8(ppu->bus, LCDC) & LCDC_ENABLE)) {
+    //        ppu->current_ly = 0;
+    //        bus_write8(ppu->bus, LY, 0);
+    //        ppu->mode = MODE_HBLANK;  // mode 0
+    //        uint8_t stat = bus_read8(ppu->bus, STAT);
+    //        bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
+    //        ppu->window_line_counter = 0;
+    //        return;
+    //    }
     
     ppu->dot_counter++;
     // ppu_check_stat_interrupts(ppu);
@@ -567,10 +597,17 @@ void ppu_step(ppu *ppu) {
                     uint8_t stat = bus_read8(ppu->bus, STAT);
                     bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
                     ppu_check_stat_interrupts(ppu);
+                    
                 }
                 // ppu_check_stat_interrupts(ppu);
             }
             //ppu_check_stat_interrupts(ppu);
             break;
     }
+
+    if (ppu->current_ly != bus_read8(ppu->bus, LY)) {
+        // printf("writing ly=%d to memory\n", ppu->current_ly);
+        bus_write8(ppu->bus, LY, ppu->current_ly);
+    }
+
 }

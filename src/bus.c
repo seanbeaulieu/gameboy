@@ -26,7 +26,8 @@ void bus_init(bus *bus) {
     }
     // initialize the memory to a known state
     memset(bus->memory, 0, 65536);
-
+    bus->joypad_state = 0xFF;  // all buttons released
+    bus->joypad_select = 0xFF;  // nothing selected
     // print check to see if memory properly intialized to load rom into
     // printf("Bus memory initialized. First byte: 0x%02X, Last byte: 0x%02X\n", 
     // bus->memory[0], bus->memory[65535]);
@@ -45,6 +46,40 @@ uint8_t bus_read8(bus *bus, uint16_t address) {
     // if (address == 0xFF44) {
     //     return 0x90;  
     // }
+    if (address < 0x8000) {
+        // ROM - typically not writable
+        // Maybe handle bank switching here
+        return bus->memory[address];
+    } else if (address < 0xA000) {
+        // VRAM
+        // we need to check the PPU mode here
+        // only modes 0, 1, and 2 can access VRAM
+        // any attempts to write are ignored 
+        // any attmepts to read return 0xFF
+        // read the STAT mode bit to determine the mode the PPU is currently on 
+        // if it's anything besides drawing (3) , we'll return the read
+        if ((bus->memory[0xFF41] & 0x03) != 3) {
+            return bus->memory[address];
+        } else {
+        return 0xFF;
+        }
+        // maybe trigger some graphics update
+    } else if (address == 0xFF00) {
+        uint8_t result = bus->joypad_select & 0x30;  // get select bits
+        
+        // if dpad selected (bit 4 = 0)
+        if (!(bus->joypad_select & 0x10)) {
+            result |= (bus->joypad_state >> 4) & 0x0F;
+        }
+        // if buttons selected (bit 5 = 0)  
+        else if (!(bus->joypad_select & 0x20)) {
+            result |= bus->joypad_state & 0x0F;
+        }
+        else {
+            result |= 0x0F;  // nothing selected = all released
+        }
+        return result;
+    }
     return bus->memory[address];
 }
 
@@ -62,7 +97,20 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
         bus->memory[address] = value;
     } else if (address < 0xA000) {
         // VRAM
-        bus->memory[address] = value;
+        // we need to check the PPU mode here
+        // only modes 0, 1, and 2 can access VRAM
+        // any attempts to write are ignored 
+        if ((bus->memory[0xFF41] & 0x03) != 3) {
+            bus->memory[address] = value;
+        }
+
+        if (address >= 0x8000 && address <= 0x9FFF) {
+            if (address <= 0x97FF) {
+                printf("VRAM write: tile data at 0x%04X = 0x%02X\n", address, value);
+            } else {
+                printf("VRAM write: tile map at 0x%04X = 0x%02X\n", address, value);
+            }
+        }
         // maybe trigger some graphics update
     } else if (address < 0xC000) {
         // external RAM
@@ -83,13 +131,17 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
         bus->memory[address] = value;
         // maybe trigger sprite update
     } else if (address < 0xFF00) {
-        // not usable
-        
+        // input register
+        if (address == 0xFF00) {
+        bus->joypad_select = value;
+        return;
+    }
     } else if (address < 0xFF80) {
         // I/O Registers
-        if (address == 0xFF01) {
-            printf("%c", value);
-        }
+        // if (address == 0xFF01) {
+        //     printf("serial write: 0x%02X ('%c')\n", value);
+
+        // }
         
         if (address == 0xFF0F || address == 0xFFFF || (address >= 0xFF04 && address <= 0xFF07)) {
             // interrupt and timer registers
@@ -104,8 +156,8 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
         }
         
         if (address == 0xFF40) {
-            printf("writing to LCDC\n");
-            print_bits(value);
+            // printf("writing to LCDC\n");
+            // print_bits(value);
             bus->memory[address] = value;
         }
 

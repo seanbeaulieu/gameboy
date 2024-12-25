@@ -104,9 +104,9 @@ void cleanup_display() {
 // convert gameboy colors to SDL colors
 uint32_t gb_colors[4] = {
     0xFFFFFFFF,  // white
-    0xAAAAAFFF,  // light gray
-    0x555555FF,  // dark gray
-    0x000000FF   // black
+    0xFFAAAAFF,  // light gray
+    0xFF5555FF,  // dark gray
+    0xFF000000   // black
 };
 
 // callback function for PPU frame completion
@@ -131,6 +131,50 @@ void display_frame(uint8_t *buffer) {
     SDL_RenderPresent(renderer);
 }
 
+// event handler for main
+// based on the button selected, set the corresponding bit (to 0)
+void handle_input(SDL_Event *event, bus *bus) {
+    switch(event->type) {
+        case SDL_KEYDOWN:
+            switch(event->key.keysym.sym) {
+                case SDLK_UP:
+                    printf("up pressed");
+                    bus->joypad_state &= ~0x40;  
+                    break;
+                case SDLK_DOWN:
+                    printf("down pressed");
+                    bus->joypad_state &= ~0x80;  
+                    break;
+                case SDLK_LEFT:
+                    printf("left pressed");
+                    bus->joypad_state &= ~0x20;
+                    break;
+                case SDLK_RIGHT:
+                    printf("right pressed");
+                    bus->joypad_state &= ~0x10;  
+                    break;
+            }
+            break;
+            
+        case SDL_KEYUP:
+            switch(event->key.keysym.sym) {
+                case SDLK_UP:
+                    bus->joypad_state |= 0x40;  
+                    break;
+                case SDLK_DOWN:
+                    bus->joypad_state |= 0x80;  
+                    break;
+                case SDLK_LEFT:
+                    bus->joypad_state |= 0x20;  
+                    break;
+                case SDLK_RIGHT:
+                    bus->joypad_state |= 0x10;  
+                    break;
+            }
+            break;
+    }
+}
+
 int main(int argc, char *argv[]) {
     cpu gameboy;
     ppu PPU;
@@ -139,6 +183,8 @@ int main(int argc, char *argv[]) {
     // init everything
     bus_init(&gameboy.bus);
     cpu_init(&gameboy, &PPU);  // pass in the PPU pointer
+
+    // calls test init, setting to the DMG defaults for boot
     cpu_init_test(&gameboy.registers);
 
     // setup PPU
@@ -186,6 +232,8 @@ int main(int argc, char *argv[]) {
             if (event.type == SDL_QUIT) {
                 running = 0;
             }
+            // call handler for SDL inputs
+            handle_input(&event, &gameboy.bus);
         }
         // debug_print(&gameboy);
         

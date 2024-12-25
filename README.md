@@ -31,3 +31,11 @@ Interrupts:
 1) 0x0100-0x014F cartridge header
 2) MBC1
 3) Boot Sequence
+
+**Input:**
+1) How can we handle input? 
+- SDL event handlers in main
+    - SDL_KEYDOWN
+    - SDL_KEYUP
+- On either of those events, update the input register (0xFF00)
+- 0 for being pressed, 1 for not being pressed

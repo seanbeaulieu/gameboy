@@ -23,8 +23,8 @@ void cpu_init_test(cpu_registers *registers) {
     registers->a = 0x01;
     registers->f.zero = 1;
     registers->f.subtract = 0;  
-    registers->f.half_carry = 1; 
-    registers->f.carry = 1;     
+    registers->f.half_carry = 0; 
+    registers->f.carry = 0;     
     registers->b = 0x00;
     registers->c = 0x13;
     registers->d = 0x00;
@@ -33,6 +33,22 @@ void cpu_init_test(cpu_registers *registers) {
     registers->l = 0x4D;
     registers->sp = 0xFFFE;
     registers->pc = 0x0100;
+}
+
+void cpu_init_test2(cpu_registers *registers) {
+    registers->a = 0x00;
+    registers->f.zero = 0;
+    registers->f.subtract = 0;  
+    registers->f.half_carry = 0; 
+    registers->f.carry = 0;     
+    registers->b = 0x00;
+    registers->c = 0x00;
+    registers->d = 0x00;
+    registers->e = 0x00;
+    registers->h = 0x00;
+    registers->l = 0x00;
+    registers->sp = 0x00;
+    registers->pc = 0x0000;
 }
 
 // use switch here?
@@ -115,7 +131,7 @@ void cpu_handle_interrupts(cpu *cpu) {
     // if (requested) {
     //     printf("requested is true ");
     // }
-
+    // printf("handling interrupt - IE: 0x%02X, IF: 0x%02X\n", ie, if_);
 
     // cpu->halted = 0;
     cpu->ime = 0;
@@ -282,6 +298,16 @@ void cpu_step(cpu *cpu) {
 
     // fetch the next instruction
     uint8_t opcode = bus_read8(&cpu->bus, cpu->registers.pc++);
+
+    // printf("pc: %04X, op: %02X, A: %02X, B: %02X, H: %02X\n", 
+    //    cpu->registers.pc, opcode, 
+    //    cpu->registers.a, cpu->registers.b, cpu->registers.h);
+
+    // if (cpu->registers.pc == 0x234) {
+    //     printf("ly=0x%02X stat=0x%02X\n", 
+    //         bus_read8(&cpu->bus, 0xFF44),
+    //         bus_read8(&cpu->bus, 0xFF41));
+    // }
     
     // set the counter for this instruction
     cpu->counter = op_tcycles[opcode]; 
@@ -292,6 +318,10 @@ void cpu_step(cpu *cpu) {
     for (int i = 0; i < m_cycles; i++) {
         ppu_step(cpu->ppu);
     }
+
+    // step PPU only once per cpu step? and catch PPU timer up per T-cycle
+    // cpu->ppu->dot_counter += op_tcycles[opcode];
+    // ppu_step(cpu->ppu);
     // printf("counter: %d \n", cpu->counter);
 
     // execute the instruction

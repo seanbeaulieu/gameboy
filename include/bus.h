@@ -6,7 +6,8 @@
 
 typedef struct bus {
     uint8_t *memory;
-    // etc
+    uint8_t joypad_state; // current state of all buttons
+    uint8_t joypad_select; // tracks if dpad or buttons selected
 } bus;
 
 void bus_init(bus *bus);
