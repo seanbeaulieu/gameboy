@@ -137,6 +137,7 @@ void cpu_handle_interrupts(cpu *cpu) {
     cpu->ime = 0;
 
     if (requested & 0x01) {  // Vblank
+        printf("handling vblank interrupt\n");
         bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x01); 
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
@@ -146,6 +147,7 @@ void cpu_handle_interrupts(cpu *cpu) {
         // set PC to the Vblank interrupt handler address
         cpu->registers.pc = 0x0040;
     } else if (requested & 0x02) {  // LCD status
+        printf("handling stat interrupt\n");
         // printf("handling STAT interrupt, PC was: %04X\n", cpu->registers.pc);
         // printf("writing to IF at addr=%04X clearing bit 1\n", 0xFF0F);
         // uint16_t if_addr = 0xFF0F;
@@ -159,7 +161,8 @@ void cpu_handle_interrupts(cpu *cpu) {
         // cpu->halted = 0;
         // set PC to the LCD Status interrupt handler address
         cpu->registers.pc = 0x0048;
-    } else if (requested & 0x04) {  // timer Overflow
+    } else if (requested & 0x04) {  // timer overflow
+        printf("handling tima interrupt\n");
         bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x04); 
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
@@ -168,7 +171,8 @@ void cpu_handle_interrupts(cpu *cpu) {
         // cpu->halted = 0;
         // set PC to the Timer Overflow interrupt handler address
         cpu->registers.pc = 0x0050;
-    } else if (requested & 0x08) {  // serial Link
+    } else if (requested & 0x08) {  // serial link
+        printf("handling serial link interrupt\n");
         bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x08); 
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
@@ -177,7 +181,8 @@ void cpu_handle_interrupts(cpu *cpu) {
         // cpu->halted = 0;
         // set PC to the Serial Link interrupt handler address
         cpu->registers.pc = 0x0058;
-    } else if (requested & 0x10) {  // joypad Press
+    } else if (requested & 0x10) {  // joypad press
+        printf("handling joypad press interrupt\n");
         bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x10);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);

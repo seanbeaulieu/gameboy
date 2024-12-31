@@ -26,7 +26,7 @@ void bus_init(bus *bus) {
     }
     // initialize the memory to a known state
     memset(bus->memory, 0, 65536);
-    bus->joypad_state = 0xFF;  // all buttons released
+    bus->joypad_raw = 0xFF;  // all buttons released
     bus->joypad_select = 0xFF;  // nothing selected
     // print check to see if memory properly intialized to load rom into
     // printf("Bus memory initialized. First byte: 0x%02X, Last byte: 0x%02X\n", 
@@ -61,7 +61,7 @@ uint8_t bus_read8(bus *bus, uint16_t address) {
         if ((bus->memory[0xFF41] & 0x03) != 3) {
             return bus->memory[address];
         } else {
-        return 0xFF;
+            return 0xFF;
         }
         // maybe trigger some graphics update
     } else if (address == 0xFF00) {
@@ -69,11 +69,12 @@ uint8_t bus_read8(bus *bus, uint16_t address) {
         
         // if dpad selected (bit 4 = 0)
         if (!(bus->joypad_select & 0x10)) {
-            result |= (bus->joypad_state >> 4) & 0x0F;
+            // printf("dpad selected in bus_read\n");
+            result |= bus->joypad_raw & 0x0F;
         }
         // if buttons selected (bit 5 = 0)  
         else if (!(bus->joypad_select & 0x20)) {
-            result |= bus->joypad_state & 0x0F;
+            result |= bus->joypad_raw & 0x0F;
         }
         else {
             result |= 0x0F;  // nothing selected = all released
@@ -104,13 +105,20 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
             bus->memory[address] = value;
         }
 
-        if (address >= 0x8000 && address <= 0x9FFF) {
-            if (address <= 0x97FF) {
-                printf("VRAM write: tile data at 0x%04X = 0x%02X\n", address, value);
-            } else {
-                printf("VRAM write: tile map at 0x%04X = 0x%02X\n", address, value);
-            }
+        // print where the write is occurring
+        // if (address >= 0x8000 && address <= 0x9FFF) {
+        //     if (address <= 0x97FF) {
+        //         printf("VRAM write: tile data at 0x%04X = 0x%02X\n", address, value);
+        //     } else {
+        //         printf("VRAM write: tile map at 0x%04X = 0x%02X\n", address, value);
+        //     }
+        // }
+
+        // write to VRAM if PPU is not in draw mode
+        if ((bus->memory[0xFF41] & 0x03) != 3) {
+            bus->memory[address] = value;
         }
+
         // maybe trigger some graphics update
     } else if (address < 0xC000) {
         // external RAM
@@ -131,17 +139,19 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
         bus->memory[address] = value;
         // maybe trigger sprite update
     } else if (address < 0xFF00) {
-        // input register
-        if (address == 0xFF00) {
-        bus->joypad_select = value;
-        return;
-    }
+        // ?
     } else if (address < 0xFF80) {
         // I/O Registers
         // if (address == 0xFF01) {
         //     printf("serial write: 0x%02X ('%c')\n", value);
 
         // }
+
+        // // input register
+        if (address == 0xFF00) {
+            bus->joypad_select = (value & 0x30) | 0xCF;  // only bits 4-5 writable
+            return;
+            }
         
         if (address == 0xFF0F || address == 0xFFFF || (address >= 0xFF04 && address <= 0xFF07)) {
             // interrupt and timer registers
@@ -152,16 +162,16 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
             } else {
                 bus->memory[address] = value;
             }
-
+            return;
         }
         
-        if (address == 0xFF40) {
-            // printf("writing to LCDC\n");
-            // print_bits(value);
-            bus->memory[address] = value;
-        }
+        // if (address == 0xFF40) {
+        //     // printf("writing to LCDC\n");
+        //     // print_bits(value);
+        //     bus->memory[address] = value;
+        // }
 
-        if (address == 0xFF41) {
+        else if (address == 0xFF41) {
             // make exception for PPU writes
             // this is hacky but works for now
             if (value & 0x04 || !(value & 0x04)) {  // if setting or clearing bit 2
@@ -177,11 +187,13 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
         }
         else {
             bus->memory[address] = value;
+            return;
         }
     } else {
         // high RAM (HRAM)
         bus->memory[address] = value;
     }
+    return;
 }
 
 /////////////////////////////////////////////////////////////////////////////

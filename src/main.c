@@ -103,10 +103,10 @@ void cleanup_display() {
 
 // convert gameboy colors to SDL colors
 uint32_t gb_colors[4] = {
-    0xFFFFFFFF,  // white
-    0xFFAAAAFF,  // light gray
-    0xFF5555FF,  // dark gray
-    0xFF000000   // black
+    0xE0F8D0FF,  // lightest green
+    0x88C070FF,  // light green  
+    0x346856FF,  // dark green
+    0x081820FF   // darkest green/black
 };
 
 // callback function for PPU frame completion
@@ -134,45 +134,82 @@ void display_frame(uint8_t *buffer) {
 // event handler for main
 // based on the button selected, set the corresponding bit (to 0)
 void handle_input(SDL_Event *event, bus *bus) {
-    switch(event->type) {
-        case SDL_KEYDOWN:
-            switch(event->key.keysym.sym) {
-                case SDLK_UP:
-                    printf("up pressed");
-                    bus->joypad_state &= ~0x40;  
-                    break;
-                case SDLK_DOWN:
-                    printf("down pressed");
-                    bus->joypad_state &= ~0x80;  
-                    break;
-                case SDLK_LEFT:
-                    printf("left pressed");
-                    bus->joypad_state &= ~0x20;
-                    break;
-                case SDLK_RIGHT:
-                    printf("right pressed");
-                    bus->joypad_state &= ~0x10;  
-                    break;
-            }
-            break;
-            
-        case SDL_KEYUP:
-            switch(event->key.keysym.sym) {
-                case SDLK_UP:
-                    bus->joypad_state |= 0x40;  
-                    break;
-                case SDLK_DOWN:
-                    bus->joypad_state |= 0x80;  
-                    break;
-                case SDLK_LEFT:
-                    bus->joypad_state |= 0x20;  
-                    break;
-                case SDLK_RIGHT:
-                    bus->joypad_state |= 0x10;  
-                    break;
-            }
-            break;
-    }
+   switch(event->type) {
+       case SDL_KEYDOWN:
+           switch(event->key.keysym.sym) {
+               // dpad
+               case SDLK_RIGHT:
+                   bus->joypad_select &= ~0x10;
+                   bus->joypad_raw &= ~0x01;     // bit 0 
+                   break;
+               case SDLK_LEFT:
+                   bus->joypad_select &= ~0x10;
+                   bus->joypad_raw &= ~0x02;     // bit 1
+                   break;
+               case SDLK_UP:
+                   bus->joypad_select &= ~0x10;
+                   bus->joypad_raw &= ~0x04;     // bit 2
+                   break;
+               case SDLK_DOWN:
+                   bus->joypad_select &= ~0x10;
+                   bus->joypad_raw &= ~0x08;     // bit 3
+                   break;
+
+               // buttons
+               case SDLK_a:  // A button
+                   bus->joypad_select &= ~0x20;
+                   bus->joypad_raw &= ~0x01;     // bit 0
+                   break;
+               case SDLK_s:  // B button 
+                   bus->joypad_select &= ~0x20;
+                   bus->joypad_raw &= ~0x02;     // bit 1
+                   break;
+               case SDLK_q:  // select
+                   bus->joypad_select &= ~0x20;
+                   bus->joypad_raw &= ~0x04;     // bit 2
+                   break;
+               case SDLK_w:  // start
+                   bus->joypad_select &= ~0x20;
+                   bus->joypad_raw &= ~0x08;     // bit 3
+                   break;
+           }
+           break;
+           
+       case SDL_KEYUP:
+           switch(event->key.keysym.sym) {
+               // dpad releases
+               case SDLK_RIGHT:
+                   bus->joypad_raw |= 0x01;
+                   break;
+               case SDLK_LEFT:
+                   bus->joypad_raw |= 0x02;
+                   break;
+               case SDLK_UP:
+                   bus->joypad_raw |= 0x04;
+                   break;
+               case SDLK_DOWN:
+                   bus->joypad_raw |= 0x08;
+                   break;
+
+               // button releases    
+               case SDLK_a:
+                   bus->joypad_raw |= 0x01;
+                   break;
+               case SDLK_s:
+                   bus->joypad_raw |= 0x02;
+                   break;
+               case SDLK_q:
+                   bus->joypad_raw |= 0x04;
+                   break;
+               case SDLK_w:
+                   bus->joypad_raw |= 0x08;
+                   break;
+           }
+           
+           // when releasing any key, restore select bits to unselected state
+           bus->joypad_select |= 0x30;
+           break;
+   }
 }
 
 int main(int argc, char *argv[]) {
