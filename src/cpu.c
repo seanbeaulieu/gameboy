@@ -137,7 +137,7 @@ void cpu_handle_interrupts(cpu *cpu) {
     cpu->ime = 0;
 
     if (requested & 0x01) {  // Vblank
-        printf("handling vblank interrupt\n");
+        // printf("handling vblank interrupt\n");
         bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x01); 
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);
@@ -162,7 +162,7 @@ void cpu_handle_interrupts(cpu *cpu) {
         // set PC to the LCD Status interrupt handler address
         cpu->registers.pc = 0x0048;
     } else if (requested & 0x04) {  // timer overflow
-        printf("handling tima interrupt\n");
+        // printf("handling tima interrupt\n");
         bus_write8(&cpu->bus, 0xFF0F, if_ & ~0x04); 
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc >> 8);
         bus_write8(&cpu->bus, --cpu->registers.sp, cpu->registers.pc & 0xFF);

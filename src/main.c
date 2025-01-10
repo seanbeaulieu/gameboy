@@ -134,82 +134,127 @@ void display_frame(uint8_t *buffer) {
 // event handler for main
 // based on the button selected, set the corresponding bit (to 0)
 void handle_input(SDL_Event *event, bus *bus) {
-   switch(event->type) {
-       case SDL_KEYDOWN:
-           switch(event->key.keysym.sym) {
-               // dpad
-               case SDLK_RIGHT:
-                   bus->joypad_select &= ~0x10;
-                   bus->joypad_raw &= ~0x01;     // bit 0 
-                   break;
-               case SDLK_LEFT:
-                   bus->joypad_select &= ~0x10;
-                   bus->joypad_raw &= ~0x02;     // bit 1
-                   break;
-               case SDLK_UP:
-                   bus->joypad_select &= ~0x10;
-                   bus->joypad_raw &= ~0x04;     // bit 2
-                   break;
-               case SDLK_DOWN:
-                   bus->joypad_select &= ~0x10;
-                   bus->joypad_raw &= ~0x08;     // bit 3
-                   break;
+    switch(event->type) {
+        case SDL_KEYDOWN:
+            switch(event->key.keysym.sym) {
+              // dpad
+                case SDLK_RIGHT:
+                    bus->joypad_select &= ~0x10;  // clear bit 4 for dpad
+                    bus->dpad_state &= ~0x01;
+                    print_bits(bus->joypad_select, "select bits");
+                    print_bits(bus->button_state, "button state");
+                    print_bits(bus->dpad_state, "dpad state");
+                    printf("---\n");
+                    break;
+                case SDLK_LEFT:
+                    bus->joypad_select &= ~0x10;
+                    bus->dpad_state &= ~0x02;
+                    printf("left press: select=%02X dpad_state=%02X\n", bus->joypad_select, bus->dpad_state);
+                    print_bits(bus->joypad_select, "select bits");
+                    print_bits(bus->button_state, "button state");
+                    print_bits(bus->dpad_state, "dpad state");
+                    printf("---\n");
+                    break;
+                case SDLK_UP:
+                    bus->joypad_select &= ~0x10;
+                    bus->dpad_state &= ~0x04;
+                    printf("up press: select=%02X dpad_state=%02X\n", bus->joypad_select, bus->dpad_state);
+                    print_bits(bus->joypad_select, "select bits");
+                    print_bits(bus->button_state, "button state");
+                    print_bits(bus->dpad_state, "dpad state");
+                    printf("---\n");
+                    break;
+                case SDLK_DOWN:
+                    bus->joypad_select &= ~0x10;
+                    bus->dpad_state &= ~0x08;
+                    printf("down press: select=%02X dpad_state=%02X\n", bus->joypad_select, bus->dpad_state);
+                    print_bits(bus->joypad_select, "select bits");
+                    print_bits(bus->button_state, "button state");
+                    print_bits(bus->dpad_state, "dpad state");
+                    printf("---\n");
+                    break;
 
-               // buttons
-               case SDLK_a:  // A button
-                   bus->joypad_select &= ~0x20;
-                   bus->joypad_raw &= ~0x01;     // bit 0
-                   break;
-               case SDLK_s:  // B button 
-                   bus->joypad_select &= ~0x20;
-                   bus->joypad_raw &= ~0x02;     // bit 1
-                   break;
-               case SDLK_q:  // select
-                   bus->joypad_select &= ~0x20;
-                   bus->joypad_raw &= ~0x04;     // bit 2
-                   break;
-               case SDLK_w:  // start
-                   bus->joypad_select &= ~0x20;
-                   bus->joypad_raw &= ~0x08;     // bit 3
-                   break;
-           }
-           break;
-           
-       case SDL_KEYUP:
-           switch(event->key.keysym.sym) {
-               // dpad releases
-               case SDLK_RIGHT:
-                   bus->joypad_raw |= 0x01;
-                   break;
-               case SDLK_LEFT:
-                   bus->joypad_raw |= 0x02;
-                   break;
-               case SDLK_UP:
-                   bus->joypad_raw |= 0x04;
-                   break;
-               case SDLK_DOWN:
-                   bus->joypad_raw |= 0x08;
-                   break;
+                // buttons
+                case SDLK_a:  // A button
+                    bus->joypad_select &= ~0x20;  // clear bit 5 for buttons
+                    bus->button_state &= ~0x01;
+                    print_bits(bus->joypad_select, "select bits");
+                    print_bits(bus->button_state, "button state");
+                    print_bits(bus->dpad_state, "dpad state");
+                    printf("---\n");
+                    break;
+                case SDLK_s:  // B button 
+                    bus->joypad_select &= ~0x20;
+                    bus->button_state &= ~0x02;
+                    printf("b press: select=%02X button_state=%02X\n", bus->joypad_select, bus->button_state);
+                    print_bits(bus->joypad_select, "select bits");
+                    print_bits(bus->button_state, "button state");
+                    print_bits(bus->dpad_state, "dpad state");
+                    printf("---\n");
+                    break;
+                case SDLK_q:  // select
+                    bus->joypad_select &= ~0x20;
+                    bus->button_state &= ~0x04;
+                    printf("select press: select=%02X button_state=%02X\n", bus->joypad_select, bus->button_state);
+                    print_bits(bus->joypad_select, "select bits");
+                    print_bits(bus->button_state, "button state");
+                    print_bits(bus->dpad_state, "dpad state");
+                    printf("---\n");
+                    break;
+                case SDLK_w:  // start
+                    bus->joypad_select &= ~0x20;
+                    bus->button_state &= ~0x08;
+                    printf("start press: select=%02X button_state=%02X\n", bus->joypad_select, bus->button_state);
+                    print_bits(bus->joypad_select, "select bits");
+                    print_bits(bus->button_state, "button state");
+                    print_bits(bus->dpad_state, "dpad state");
+                    printf("---\n");
+                    break;
+                }
+                break;
+          
+      case SDL_KEYUP:
+          switch(event->key.keysym.sym) {
+                // dpad releases
+                case SDLK_RIGHT:
+                    bus->dpad_state |= 0x01;
+                    //printf("right release: select=%02X dpad_state=%02X\n", bus->joypad_select, bus->dpad_state);
+                    break;
+                case SDLK_LEFT:
+                    bus->dpad_state |= 0x02;
+                    //printf("left release: select=%02X dpad_state=%02X\n", bus->joypad_select, bus->dpad_state);
+                    break;
+                case SDLK_UP:
+                    bus->dpad_state |= 0x04;
+                    //printf("up release: select=%02X dpad_state=%02X\n", bus->joypad_select, bus->dpad_state);
+                    break;
+                case SDLK_DOWN:
+                    bus->dpad_state |= 0x08;
+                    //printf("down release: select=%02X dpad_state=%02X\n", bus->joypad_select, bus->dpad_state);
+                    break;
 
-               // button releases    
-               case SDLK_a:
-                   bus->joypad_raw |= 0x01;
-                   break;
-               case SDLK_s:
-                   bus->joypad_raw |= 0x02;
-                   break;
-               case SDLK_q:
-                   bus->joypad_raw |= 0x04;
-                   break;
-               case SDLK_w:
-                   bus->joypad_raw |= 0x08;
-                   break;
-           }
-           
-           // when releasing any key, restore select bits to unselected state
-           bus->joypad_select |= 0x30;
-           break;
-   }
+                // button releases    
+                case SDLK_a:
+                    bus->button_state |= 0x01;
+                    //printf("a release: select=%02X button_state=%02X\n", bus->joypad_select, bus->button_state);
+                    break;
+                case SDLK_s:
+                    bus->button_state |= 0x02;
+                    //printf("b release: select=%02X button_state=%02X\n", bus->joypad_select, bus->button_state);
+                    break;
+                case SDLK_q:
+                    bus->button_state |= 0x04;
+                    //printf("select release: select=%02X button_state=%02X\n", bus->joypad_select, bus->button_state);
+                    break;
+                case SDLK_w:
+                    bus->button_state |= 0x08;
+                    //printf("start release: select=%02X button_state=%02X\n", bus->joypad_select, bus->button_state);
+                    break;
+          }
+          
+          bus->joypad_select |= 0x30;  // set bits 4-5 (nothing selected)
+          break;
+  }
 }
 
 int main(int argc, char *argv[]) {

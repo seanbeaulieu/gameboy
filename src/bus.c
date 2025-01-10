@@ -26,7 +26,8 @@ void bus_init(bus *bus) {
     }
     // initialize the memory to a known state
     memset(bus->memory, 0, 65536);
-    bus->joypad_raw = 0xFF;  // all buttons released
+    bus->dpad_state = 0x0F;    // all directions released
+    bus->button_state = 0x0F;  // all buttons released
     bus->joypad_select = 0xFF;  // nothing selected
     // print check to see if memory properly intialized to load rom into
     // printf("Bus memory initialized. First byte: 0x%02X, Last byte: 0x%02X\n", 
@@ -64,20 +65,16 @@ uint8_t bus_read8(bus *bus, uint16_t address) {
             return 0xFF;
         }
         // maybe trigger some graphics update
-    } else if (address == 0xFF00) {
-        uint8_t result = bus->joypad_select & 0x30;  // get select bits
+    } if (address == 0xFF00) {
+        // start with all bits set except select bits
+        uint8_t result = 0xCF | (bus->joypad_select & 0x30);
         
-        // if dpad selected (bit 4 = 0)
-        if (!(bus->joypad_select & 0x10)) {
-            // printf("dpad selected in bus_read\n");
-            result |= bus->joypad_raw & 0x0F;
+        // check each select bit independently
+        if (!(bus->joypad_select & 0x20)) {  // buttons
+            result = (result & 0xF0) | (bus->button_state & 0x0F);
         }
-        // if buttons selected (bit 5 = 0)  
-        else if (!(bus->joypad_select & 0x20)) {
-            result |= bus->joypad_raw & 0x0F;
-        }
-        else {
-            result |= 0x0F;  // nothing selected = all released
+        if (!(bus->joypad_select & 0x10)) {  // dpad
+            result = (result & 0xF0) | (bus->dpad_state & 0x0F);
         }
         return result;
     }
@@ -95,26 +92,12 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
     if (address < 0x8000) {
         // ROM - typically not writable
         // Maybe handle bank switching here
-        bus->memory[address] = value;
+        // bus->memory[address] = value;
     } else if (address < 0xA000) {
         // VRAM
         // we need to check the PPU mode here
         // only modes 0, 1, and 2 can access VRAM
-        // any attempts to write are ignored 
-        if ((bus->memory[0xFF41] & 0x03) != 3) {
-            bus->memory[address] = value;
-        }
-
-        // print where the write is occurring
-        // if (address >= 0x8000 && address <= 0x9FFF) {
-        //     if (address <= 0x97FF) {
-        //         printf("VRAM write: tile data at 0x%04X = 0x%02X\n", address, value);
-        //     } else {
-        //         printf("VRAM write: tile map at 0x%04X = 0x%02X\n", address, value);
-        //     }
-        // }
-
-        // write to VRAM if PPU is not in draw mode
+        // any attempts to write during mode 3 are ignored 
         if ((bus->memory[0xFF41] & 0x03) != 3) {
             bus->memory[address] = value;
         }
@@ -136,7 +119,12 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
         bus->memory[address - 0x2000] = value;
     } else if (address < 0xFEA0) {
         // OAM
-        bus->memory[address] = value;
+        // oam is only accessible during modes 0 and 1
+        if ((bus->memory[0xFF41] & 0x03) != 0 || (bus->memory[0xFF41] & 0x03) != 1) {
+            bus->memory[address] = value;
+        }
+
+        // bus->memory[address] = value;
         // maybe trigger sprite update
     } else if (address < 0xFF00) {
         // ?
@@ -251,11 +239,11 @@ int load_rom(bus *bus, const char *rom_path) {
 }
 
 // helper to print bits
-void print_bits(uint8_t value) {
-    printf("0x%02X (", value);
-    for (int i = 7; i >= 0; i--) {
-        printf("%d", (value >> i) & 1);
-        if (i == 4) printf(" ");
-    }
-    printf(")\n");
+void print_bits(uint8_t value, const char *name) {
+   printf("%s: 0x%02X (", name, value);
+   for(int i = 7; i >= 0; i--) {
+       printf("%d", (value >> i) & 1);
+       if(i == 4) printf(" ");
+   }
+   printf(")\n"); 
 }

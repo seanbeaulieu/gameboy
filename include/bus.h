@@ -6,8 +6,9 @@
 
 typedef struct bus {
     uint8_t *memory;
-    uint8_t joypad_raw; // current state of all buttons
-    uint8_t joypad_select; // tracks if dpad or buttons selected
+    uint8_t dpad_state;    // store dpad in bits 0-3
+    uint8_t button_state;  // store buttons in bits 0-3 
+    uint8_t joypad_select; // select bits
 } bus;
 
 void bus_init(bus *bus);
@@ -22,6 +23,6 @@ void bus_increment_div(bus *bus);
 // uint8_t bus_read_timer_register(bus *bus, uint16_t address);
 // void bus_write_timer_register(bus *bus, uint16_t address, uint8_t value);
 int load_rom(bus *bus, const char *rom_path);
-void print_bits(uint8_t value);
+void print_bits(uint8_t value, const char *name);
 
 #endif

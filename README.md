@@ -11,7 +11,7 @@ The basic control flow / one step of my CPU is:
 1) If both the interrupt enable and the interrupt flag are set to 1, and the IME register (enables any interrupt) is enabled, handle interrupts.
 2) Fetch the instruction currently being pointed to by the Program Counter. 
 3) Increment the internal CPU counter by the amount of T-cycles the instruction takes (4 for every memory access)
-4) Tick the PPU once for each M-cycle the instruction takes (1 for every memory access)
+4) Tick the PPU once for each M-cycle the instruction takes (1 for every memory access) (this might be revised to tick the PPU once and then catch the PPU counter up by the amount of T-cycles the instruction takes)
 5) Execute the instruction
 6) Update timers
 
@@ -23,7 +23,7 @@ A PPU step consists of one of:
 1) Reading the sprite data to display from OAM memory, storing in a sprite buffer. Grabs info for sprites on a current scanline, and determines which ones should be displayed on the current line. OAM Scan will take 80 dots.
 2) Pushing pixel data from tile data to a screen buffer for a specific line, basically 'rendering' the display data. In this step, the PPU will determine what pixels to display in each of the viewports.
 3) HBLANK waits a determined amount until 456 total dots (one 2^22 Hz) have passed in the scanline.
-4) VBLANK pads 10 scanlines at the end of every frame.
+4) VBLANK pads 10 scanlines at the end of every frame and triggers an interrupt in the CPU.
 Interrupts:
 1) STAT interrupt can be triggered in a few different ways, in the PPU this is most commonly done with a LY=LYC comparison. LY is the internal line counter that tracks which line the PPU is currently rendering. When this is equal to the LYC register (present in address 0xFF45), an interrupt is requested.
 
@@ -34,8 +34,10 @@ Interrupts:
 
 **Input:**
 1) How can we handle input? 
+- I use three different joypad integers to track the bits
+    - One for the dpad bits, one for the button bits, and one for the bits to select between the two
 - SDL event handlers in main
     - SDL_KEYDOWN
     - SDL_KEYUP
-- On either of those events, update the input register (0xFF00)
-- 0 for being pressed, 1 for not being pressed
+    - These set both the d-pad or button select bit (to 0) and the relevant bit (also to 0) in either the dpad or button nibble
+- The CPU constantly polls the input register (0xFF00) for input. Because we use different variables to track all components of the input register, we can instead modify the read function to return the relevant bits.
