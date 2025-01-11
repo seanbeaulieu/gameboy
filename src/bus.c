@@ -173,6 +173,16 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
             }
             return;
         }
+
+        // writing to 0xFF46 starts a DMA transfer 
+        // the written value specifies the trasnfer source address divided by $100
+        else if (address == 0xFF46) {
+            // take the written value and shift 8 bits left
+            uint16_t source = value << 8;
+            // take 160 bytes and copy to OAM (#FE00-#FE9F)
+            memcpy(&bus->memory[0xFE00], &bus->memory[source], 160);
+        }
+
         else {
             bus->memory[address] = value;
             return;

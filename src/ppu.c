@@ -534,9 +534,9 @@ void ppu_step(ppu *ppu) {
                 // Update STAT mode bits first
                 uint8_t stat = bus_read8(ppu->bus, STAT);
                 bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
-                ppu_check_stat_interrupts(ppu);
+                // ppu_check_stat_interrupts(ppu);
             }
-            //ppu_check_stat_interrupts(ppu);
+            ppu_check_stat_interrupts(ppu);
             break;
 
         case MODE_DRAWING:
@@ -547,9 +547,9 @@ void ppu_step(ppu *ppu) {
                 // Update STAT mode bits first
                 uint8_t stat = bus_read8(ppu->bus, STAT);
                 bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
-                ppu_check_stat_interrupts(ppu);
+                // ppu_check_stat_interrupts(ppu);
             }
-            //ppu_check_stat_interrupts(ppu);
+            ppu_check_stat_interrupts(ppu);
             break;
 
         case MODE_HBLANK:
@@ -564,16 +564,16 @@ void ppu_step(ppu *ppu) {
                     bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
                     uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
                     bus_write8(ppu->bus, 0xFF0F, if_reg | 0x01);
-                    ppu_check_stat_interrupts(ppu);
+                    // ppu_check_stat_interrupts(ppu);
                 } else {
                     ppu->mode = MODE_OAM_SCAN;
                     // Update STAT mode bits first
                     uint8_t stat = bus_read8(ppu->bus, STAT);
                     bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
-                    ppu_check_stat_interrupts(ppu);
+                    // ppu_check_stat_interrupts(ppu);
                 }
             }
-            //ppu_check_stat_interrupts(ppu);
+            ppu_check_stat_interrupts(ppu);
             break;
 
         case MODE_VBLANK:
@@ -596,12 +596,12 @@ void ppu_step(ppu *ppu) {
                     // Update STAT mode bits first
                     uint8_t stat = bus_read8(ppu->bus, STAT);
                     bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
-                    ppu_check_stat_interrupts(ppu);
+                    // ppu_check_stat_interrupts(ppu);
                     
                 }
                 // ppu_check_stat_interrupts(ppu);
             }
-            //ppu_check_stat_interrupts(ppu);
+            ppu_check_stat_interrupts(ppu);
             break;
     }
 
