@@ -491,7 +491,22 @@ void ppu_step(ppu *ppu) {
     //    (bus_read8(ppu->bus, LCDC) & LCDC_ENABLE) ? "ON" : "OFF");
 
     if (!(bus_read8(ppu->bus, LCDC) & LCDC_ENABLE)) {
+        // ppu->window_line_counter = 0;
+        // return;
+
         ppu->window_line_counter = 0;
+        ppu->current_ly = 0;
+        ppu->mode = MODE_HBLANK; // mode 0
+        
+        // update LY register and mode bits in STAT
+        bus_write8(ppu->bus, LY, 0);
+        uint8_t stat = bus_read8(ppu->bus, STAT);
+        bus_write8(ppu->bus, STAT, (stat & 0xFC) | MODE_HBLANK);
+        
+        // clear LCD interrupts (bits 0-2 in IF)
+        uint8_t if_reg = bus_read8(ppu->bus, 0xFF0F);
+        bus_write8(ppu->bus, 0xFF0F, if_reg & ~0x03);
+        
         return;
     }
     
