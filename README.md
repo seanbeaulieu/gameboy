@@ -11,7 +11,7 @@ The basic control flow / one step of my CPU is:
 1) If both the interrupt enable and the interrupt flag are set to 1, and the IME register (enables any interrupt) is enabled, handle interrupts.
 2) Fetch the instruction currently being pointed to by the Program Counter. 
 3) Increment the internal CPU counter by the amount of T-cycles the instruction takes (4 for every memory access)
-4) Tick the PPU once for each M-cycle the instruction takes (1 for every memory access) (this might be revised to tick the PPU once and then catch the PPU counter up by the amount of T-cycles the instruction takes)
+4) Tick the PPU once for each instruction executed, and then tick the PPU counter for each T-cycle the instruction takes
 5) Execute the instruction
 6) Update timers
 
