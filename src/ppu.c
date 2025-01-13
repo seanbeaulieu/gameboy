@@ -353,7 +353,6 @@ void ppu_render_scanline(ppu *ppu) {
         uint8_t wx = bus_read8(ppu->bus, WX);
         
         // check if window coordinates are in valid range
-        // bool in_range = (wx <= 166 && wy <= 143 && ppu->current_ly >= wy);
         
         if (wx <= 166 && wy <= 143 && ppu->current_ly >= wy) {
             // calculate effective window x position
@@ -405,22 +404,8 @@ void ppu_render_scanline(ppu *ppu) {
     
     // render sprites if enabled
     if (lcdc & LCDC_OBJ_ON) {
-        // sort sprites by x coordinate (ascending) and OAM index for proper priority
-        // for (int i = 0; i < ppu->sprite_count - 1; i++) {
-        //     for (int j = i + 1; j < ppu->sprite_count; j++) {
-        //         // compare x positions first
-        //         if (ppu->sprite_buffer[j].x_pos < ppu->sprite_buffer[i].x_pos ||
-        //             // if x positions are equal, earlier OAM index has priority
-        //             (ppu->sprite_buffer[j].x_pos == ppu->sprite_buffer[i].x_pos && 
-        //             ppu->sprite_buffer[j].index < ppu->sprite_buffer[i].index)) {
-        //             // swap sprites
-        //             sprite_data temp = ppu->sprite_buffer[i];
-        //             ppu->sprite_buffer[i] = ppu->sprite_buffer[j];
-        //             ppu->sprite_buffer[j] = temp;
-        //         }
-        //     }
-        // }
 
+        // sort sprites by x position and index
         for (int i = 1; i < ppu->sprite_count; i++) {
             sprite_data key = ppu->sprite_buffer[i];
             int j = i - 1;
@@ -450,9 +435,8 @@ void ppu_render_scanline(ppu *ppu) {
             }
             
             // get tile data address
-            // uint16_t tile_addr = 0x8000 + (sprite->tile_num * 16) + (line * 2);
-
             uint8_t adjusted_tile_num = sprite->tile_num;
+
             if (lcdc & LCDC_OBJ_SIZE) {
                 // mask off bit 0 for 8x16 sprites
                 adjusted_tile_num &= 0xFE;  // clear lowest bit
@@ -510,16 +494,6 @@ void ppu_step(ppu *ppu) {
         ppu->window_line_counter = 0;
         return;
     }
-
-    //     if (!(bus_read8(ppu->bus, LCDC) & LCDC_ENABLE)) {
-    //        ppu->current_ly = 0;
-    //        bus_write8(ppu->bus, LY, 0);
-    //        ppu->mode = MODE_HBLANK;  // mode 0
-    //        uint8_t stat = bus_read8(ppu->bus, STAT);
-    //        bus_write8(ppu->bus, STAT, (stat & 0xFC) | ppu->mode);
-    //        ppu->window_line_counter = 0;
-    //        return;
-    //    }
     
     ppu->dot_counter++;
     // ppu_check_stat_interrupts(ppu);

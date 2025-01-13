@@ -264,55 +264,19 @@ uint8_t op_tcycles[0x100] = {
 
 void cpu_step(cpu *cpu) {
    
+   // check for interrupts
     uint8_t ie = bus_read8(&cpu->bus, 0xFFFF); // interrupt Enable
     uint8_t if_ = bus_read8(&cpu->bus, 0xFF0F); // interrupt Flag
 
-    // if ((cpu->ime || cpu->halted) && (ie & if_ & 0x1F)) {
     if ((cpu->ime || cpu->halted) && (ie & if_ & 0x1F)) {
         cpu->halted = 0;
         if (cpu->ime) {
             cpu_handle_interrupts(cpu);
         }
     }
-    // handle interrupts first
-    // if (cpu->ime) {
-    //     // printf("cpu->ime is true");
-    //     cpu_handle_interrupts(cpu);
-    // }
-
-    // // check if CPU is halted
-    // if (cpu->halted) {
-    //     // while halted, only update timers and check for interrupts
-        
-    //     // cpu_update_timers(cpu);
-        
-    //     // check if any enabled interrupt is pending
-    //     uint8_t ie = bus_read8(&cpu->bus, 0xFFFF); // interrupt Enable
-    //     uint8_t if_ = bus_read8(&cpu->bus, 0xFF0F); // interrupt Flag
-    //     if (ie & if_) {
-    //         // an enabled interrupt is pending, exit halt state
-    //         // cpu->halted = 0;
-    //         cpu_handle_interrupts(cpu);
-    //     } else {
-    //         // still halted, don't execute an instruction
-    //         cpu->registers.pc++;
-    //         cpu->count++;  // increment the total cycle count
-    //         return;
-    //     }
-    // }
 
     // fetch the next instruction
     uint8_t opcode = bus_read8(&cpu->bus, cpu->registers.pc++);
-
-    // printf("pc: %04X, op: %02X, A: %02X, B: %02X, H: %02X\n", 
-    //    cpu->registers.pc, opcode, 
-    //    cpu->registers.a, cpu->registers.b, cpu->registers.h);
-
-    // if (cpu->registers.pc == 0x234) {
-    //     printf("ly=0x%02X stat=0x%02X\n", 
-    //         bus_read8(&cpu->bus, 0xFF44),
-    //         bus_read8(&cpu->bus, 0xFF41));
-    // }
     
     // set the counter for this instruction
     cpu->counter = op_tcycles[opcode]; 

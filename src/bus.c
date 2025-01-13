@@ -29,9 +29,6 @@ void bus_init(bus *bus) {
     bus->dpad_state = 0x0F;    // all directions released
     bus->button_state = 0x0F;  // all buttons released
     bus->joypad_select = 0xFF;  // nothing selected
-    // print check to see if memory properly intialized to load rom into
-    // printf("Bus memory initialized. First byte: 0x%02X, Last byte: 0x%02X\n", 
-    // bus->memory[0], bus->memory[65535]);
 }
 
 // free bus memory
@@ -80,11 +77,6 @@ uint8_t bus_read8(bus *bus, uint16_t address) {
     }
     return bus->memory[address];
 }
-
-// void bus_write8(bus *bus, uint16_t address, uint8_t value) {
-//     // for testing, treat all memory as RAM
-//     bus->memory[address] = value;
-// }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -214,7 +206,6 @@ void bus_increment_div(bus *bus) {
 
 // load ROM memory
 // In each cartridge, the required (or preferred) MBC type should be specified in the byte at $0147 of the ROM, as described in the cartridge header.
-// 
 
 int load_rom(bus *bus, const char *rom_path) {
     FILE *file = fopen(rom_path, "rb");
