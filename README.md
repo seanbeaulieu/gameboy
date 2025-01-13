@@ -4,6 +4,10 @@ The display of the DMG is a 160x144 pixel LCD screen. The original Gameboy only 
 
 The DMG has 8 KiB of both Work RAM and Video RAM. It can play games up to 64kb, although does have functionality for cartridges that add memory via Memory Bank Controllers. 
 
+Tetris:
+
+![me](https://github.com/seanbeaulieu/gameboy/blob/main/tetrisgif.gif)
+
 **CPU:**
 
 The basic control flow / one step of my CPU is:
