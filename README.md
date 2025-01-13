@@ -41,3 +41,9 @@ Interrupts:
     - SDL_KEYUP
     - These set both the d-pad or button select bit (to 0) and the relevant bit (also to 0) in either the dpad or button nibble
 - The CPU constantly polls the input register (0xFF00) for input. Because we use different variables to track all components of the input register, we can instead modify the read function to return the relevant bits.
+
+**Bus:**
+1) How can we handle access to memory?
+- It is commonly recommended to use a single read and write function in order to handle all of the different functionality that occurs.
+- There are many times when the CPU should not have access to certain areas of memory depending on the state of other components.
+- There are also certain sections of memory that cannot be accessed, or can only be accessed at certain times.
