@@ -1,6 +1,6 @@
 This is a project attempting to emulate the hardware of an original 1989 Nintendo Gameboy, codenamed the DMG. The DMG possessed a Sharp SM83 CPU, which was based loosely on the Zilog Z80 and Intel 8080 microprocessors. The SM83 has seven 8-bit registers, which can be combined to form four 16-bit registers. There is also the stack pointer and the program counter registers, both of which are 16 bits. Some instructions set flags after executing, which are contained in the lower bits of one of the 16-bit registers (AF).
 
-The display of the DMG is a 160x144 pixel LCD screen. The original Gameboy only had four shades of green that could be displayed, which is in stark contrast to the 32768 available to the later Gameboy Color. The LCD is managed by a Pixel Processing Unit, which runs at a 59.73 Hz refresh rate, operating alongside the CPU.
+The display of the DMG is a 160x144 pixel LCD screen. The original Gameboy only had four shades of green that could be displayed, which is in stark contrast to the 32768 available to the later Gameboy Color. The LCD is managed by a Picture Processing Unit, which runs at a 59.73 Hz refresh rate, operating alongside the CPU.
 
 The DMG has 8 KiB of both Work RAM and Video RAM. It can play games up to 64kb, although does have functionality for cartridges that add memory via Memory Bank Controllers. 
 
