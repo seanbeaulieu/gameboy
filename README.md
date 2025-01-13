@@ -13,7 +13,7 @@ The DMG has 8 KiB of both Work RAM and Video RAM. It can play games up to 64kb, 
   <img src="https://github.com/seanbeaulieu/gameboy/blob/main/tetrisgif.gif" alt="tetris gameplay">
 </div>
 
-#Components
+# Components
 
 **CPU:**
 
