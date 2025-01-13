@@ -58,3 +58,7 @@ Interrupts:
 - It is commonly recommended to use a single read and write function in order to handle all of the different functionality that occurs.
 - There are many times when the CPU should not have access to certain areas of memory depending on the state of other components.
 - There are also certain sections of memory that cannot be accessed, or can only be accessed at certain times.
+
+# Acknowledgements 
+- The helpful community members in the Emulator Development GB discord channel [(link)](https://discordapp.com/channels/465585922579103744/465586075830845475)
+- Tooling and testing by [Robert Heaton](https://robertheaton.com/gameboy-doctor/), [Matt Currie](https://github.com/mattcurrie/dmg-acid2), and Blargg.
