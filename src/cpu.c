@@ -284,13 +284,13 @@ void cpu_step(cpu *cpu) {
     uint8_t m_cycles = op_tcycles[opcode] / 4;
 
     // tick ppu once for each M-cycle in the opcode
-    for (int i = 0; i < m_cycles; i++) {
-        ppu_step(cpu->ppu);
-    }
+    // for (int i = 0; i < m_cycles; i++) {
+    //     ppu_step(cpu->ppu);
+    // }
 
     // step PPU only once per cpu step? and catch PPU timer up per T-cycle
-    // cpu->ppu->dot_counter += op_tcycles[opcode];
-    // ppu_step(cpu->ppu);
+    cpu->ppu->dot_counter += op_tcycles[opcode];
+    ppu_step(cpu->ppu);
     // printf("counter: %d \n", cpu->counter);
 
     // execute the instruction

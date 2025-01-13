@@ -495,7 +495,7 @@ void ppu_step(ppu *ppu) {
         return;
     }
     
-    ppu->dot_counter++;
+    // ppu->dot_counter++;
     // ppu_check_stat_interrupts(ppu);
 
     switch(ppu->mode) {
