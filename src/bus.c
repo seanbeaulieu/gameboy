@@ -29,6 +29,13 @@ void bus_init(bus *bus) {
     bus->dpad_state = 0x0F;    // all directions released
     bus->button_state = 0x0F;  // all buttons released
     bus->joypad_select = 0xFF;  // nothing selected
+
+    // mbc basics
+    bus->rom_data = NULL;      
+    bus->mbc_type = 0;         
+    bus->rom_bank = 0;         
+    bus->ram_bank = 0;
+    bus->ram_enabled = 0;
 }
 
 // free bus memory
@@ -44,10 +51,19 @@ uint8_t bus_read8(bus *bus, uint16_t address) {
     // if (address == 0xFF44) {
     //     return 0x90;  
     // }
-    if (address < 0x8000) {
-        // ROM - typically not writable
-        // Maybe handle bank switching here
-        return bus->memory[address];
+    // if (address < 0x8000) {
+    //     // ROM - typically not writable
+    //     // Maybe handle bank switching here
+    //     return bus->memory[address];
+    if (address < 0x4000) {
+        // ROM bank 0 - always fixed
+        return bus->rom_data[address];
+
+    } else if (address < 0x8000) {
+        // ROM bank 1-N - switchable
+        uint32_t rom_addr = (address - 0x4000) + (bus->rom_bank * 0x4000);
+        return bus->rom_data[rom_addr];
+    
     } else if (address < 0xA000) {
         // VRAM
         // we need to check the PPU mode here
@@ -81,10 +97,22 @@ uint8_t bus_read8(bus *bus, uint16_t address) {
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 void bus_write8(bus *bus, uint16_t address, uint8_t value) {
-    if (address < 0x8000) {
-        // ROM - typically not writable
-        // Maybe handle bank switching here
-        // bus->memory[address] = value;
+    // ROM
+    if (address < 0x2000) {
+        // ram enable/disable
+        bus->ram_enabled = (value == 0x0a);
+    } 
+    else if (address < 0x4000) {
+        // rom bank switch
+        bus->rom_bank = value & 0x7f;
+        if (bus->rom_bank == 0) {
+            bus->rom_bank = 1;
+        }
+    } 
+    else if (address < 0x6000) {
+        // ram bank 
+        bus->ram_bank = value & 0x03;
+
     } else if (address < 0xA000) {
         // VRAM
         // we need to check the PPU mode here
@@ -186,6 +214,7 @@ void bus_write8(bus *bus, uint16_t address, uint8_t value) {
     return;
 }
 
+
 /////////////////////////////////////////////////////////////////////////////
 
 // review this and any instructions that call it
@@ -207,9 +236,40 @@ void bus_increment_div(bus *bus) {
 // load ROM memory
 // In each cartridge, the required (or preferred) MBC type should be specified in the byte at $0147 of the ROM, as described in the cartridge header.
 
+// int load_rom(bus *bus, const char *rom_path) {
+//     FILE *file = fopen(rom_path, "rb");
+
+//     if (file == NULL) {
+//         printf("Failed to open ROM file: %s\n", rom_path);
+//         return -1;
+//     }
+
+//     fseek(file, 0, SEEK_END);
+//     long file_size = ftell(file);
+//     rewind(file);
+
+//     printf("ROM file size: %ld bytes\n", file_size);
+
+//     // determine how much of the ROM to load
+//     size_t rom_size = (file_size > 0x8000) ? 0x8000 : file_size;
+
+//     // read ROM into the correct memory region (0x0000 - 0x7FFF)
+//     size_t bytes_read = fread(bus->memory, 1, rom_size, file);
+    
+//     if (bytes_read != rom_size) {
+//         fprintf(stderr, "Failed to read ROM data. Read %zu bytes out of %zu\n", bytes_read, rom_size);
+//         fclose(file);
+//         return -1;
+//     }
+
+//     printf("ROM loaded successfully. First byte: 0x%02X, Last byte: 0x%02X\n", bus->memory[0], bus->memory[bytes_read - 1]);
+
+//     fclose(file);
+//     return 0;
+// }
+
 int load_rom(bus *bus, const char *rom_path) {
     FILE *file = fopen(rom_path, "rb");
-
     if (file == NULL) {
         printf("Failed to open ROM file: %s\n", rom_path);
         return -1;
@@ -221,19 +281,59 @@ int load_rom(bus *bus, const char *rom_path) {
 
     printf("ROM file size: %ld bytes\n", file_size);
 
-    // determine how much of the ROM to load
-    size_t rom_size = (file_size > 0x8000) ? 0x8000 : file_size;
-
-    // read ROM into the correct memory region (0x0000 - 0x7FFF)
-    size_t bytes_read = fread(bus->memory, 1, rom_size, file);
-    
-    if (bytes_read != rom_size) {
-        fprintf(stderr, "Failed to read ROM data. Read %zu bytes out of %zu\n", bytes_read, rom_size);
+    // allocate memory for full ROM
+    bus->rom_data = malloc(file_size);
+    if (bus->rom_data == NULL) {
+        printf("Failed to allocate ROM memory\n");
         fclose(file);
         return -1;
     }
 
-    printf("ROM loaded successfully. First byte: 0x%02X, Last byte: 0x%02X\n", bus->memory[0], bus->memory[bytes_read - 1]);
+    // read entire ROM
+    size_t bytes_read = fread(bus->rom_data, 1, file_size, file);
+    if (bytes_read != file_size) {
+        fprintf(stderr, "Failed to read ROM\n");
+        free(bus->rom_data);
+        fclose(file);
+        return -1;
+    }
+
+    // copy first bank to main memory
+    memcpy(bus->memory, bus->rom_data, 0x8000);
+
+    // read cart type and setup MBC
+    uint8_t cart_type = bus->rom_data[0x147];
+    
+    // initialize to defaults
+    bus->rom_bank = 1;
+    bus->ram_bank = 0;
+    bus->ram_enabled = 0;
+    
+    switch(cart_type) {
+        case 0x0F:  // MBC3+TIMER+BATTERY
+        case 0x10:  // MBC3+TIMER+RAM+BATTERY
+        case 0x11:  // MBC3
+        case 0x12:  // MBC3+RAM
+        case 0x13:  // MBC3+RAM+BATTERY
+            bus->mbc_type = 3;  // MBC3
+            bus->rom_bank = 1;  // start at bank 1
+            bus->ram_bank = 0;
+            bus->ram_enabled = 0;
+            printf("MBC3 cart (type 0x%02X)\n", cart_type);
+            break;
+
+        case 0x00:
+            bus->mbc_type = 0;
+            printf("ROM ONLY cart\n");
+            break;
+            
+        default:
+            printf("WARN: unsupported cart type (0x%02X)\n", cart_type);
+            bus->mbc_type = 0;
+    }
+
+    printf("ROM loaded successfully. First byte: 0x%02X, Last byte: 0x%02X\n", 
+           bus->rom_data[0], bus->rom_data[bytes_read - 1]);
 
     fclose(file);
     return 0;

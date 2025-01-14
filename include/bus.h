@@ -9,6 +9,16 @@ typedef struct bus {
     uint8_t dpad_state;    // store dpad in bits 0-3
     uint8_t button_state;  // store buttons in bits 0-3 
     uint8_t joypad_select; // select bits
+    
+    // mbc (only no mbc and mbc3 handled)
+    uint8_t *rom_data;    // full ROM data
+    uint8_t mbc_type;     // 0=none, 1=mbc1, 2=mbc2, 3=mbc3 etc
+    uint8_t rom_bank;     // current ROM bank
+    uint8_t ram_bank;     // current RAM bank
+    uint8_t ram_enabled;     // RAM access enabled
+
+    // no rtc for mb3 
+
 } bus;
 
 void bus_init(bus *bus);
