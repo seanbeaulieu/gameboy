@@ -45,8 +45,11 @@ Interrupts:
 
 **Cartridge Header and Memory Bank Controllers:**
 1) 0x0100-0x014F cartridge header
-2) MBC1
+    - Can read info about the cartridge (MBC type) at 0x014F.
+2) MBC1, MBC3, no MBC
+    - My initial goal with this project was to play Pokemon Red/Blue. Therefore, I elected not to implement the full array of MBCs and instead opt for just no MBC and MBC3, the MBC3 being the necessary extension for the US version of Pokemon.
 3) Boot Sequence
+    - Nintendo traditionally has a bootup sequence that sets the CPU values which is checked against every ROM, crashing the game if they do not match. This is accomplished by setting the values manually at PC = 0x100. 
 
 **Input:**
 1) How can we handle input? 
