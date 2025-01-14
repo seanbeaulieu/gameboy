@@ -1,8 +1,19 @@
+<div align="center">
+  <h1>Game Boy (DMG) Emulator</h1>
+</div>
+
 This is a project attempting to emulate the hardware of an original 1989 Nintendo Gameboy, codenamed the DMG. The DMG possessed a Sharp SM83 CPU, which was based loosely on the Zilog Z80 and Intel 8080 microprocessors. The SM83 has seven 8-bit registers, which can be combined to form four 16-bit registers. There is also the stack pointer and the program counter registers, both of which are 16 bits. Some instructions set flags after executing, which are contained in the lower bits of one of the 16-bit registers (AF).
 
 The display of the DMG is a 160x144 pixel LCD screen. The original Gameboy only had four shades of green that could be displayed, which is in stark contrast to the 32768 available to the later Gameboy Color. The LCD is managed by a Picture Processing Unit, which runs at a 59.73 Hz refresh rate, operating alongside the CPU.
 
 The DMG has 8 KiB of both Work RAM and Video RAM. It can play games up to 64kb, although does have functionality for cartridges that add memory via Memory Bank Controllers. 
+
+<div align="center">
+  <h2>Tetris</h2>
+  <img src="https://github.com/seanbeaulieu/gameboy/blob/main/tetrisgif.gif" alt="tetris gameplay">
+</div>
+
+# Components
 
 **CPU:**
 
@@ -41,3 +52,13 @@ Interrupts:
     - SDL_KEYUP
     - These set both the d-pad or button select bit (to 0) and the relevant bit (also to 0) in either the dpad or button nibble
 - The CPU constantly polls the input register (0xFF00) for input. Because we use different variables to track all components of the input register, we can instead modify the read function to return the relevant bits.
+
+**Bus:**
+1) How can we handle access to memory?
+- It is commonly recommended to use a single read and write function in order to handle all of the different functionality that occurs.
+- There are many times when the CPU should not have access to certain areas of memory depending on the state of other components.
+- There are also certain sections of memory that cannot be accessed, or can only be accessed at certain times.
+
+# Acknowledgements 
+- The helpful community members in the Emulator Development GB discord channel [(link)](https://discordapp.com/channels/465585922579103744/465586075830845475)
+- Tooling and testing by [Robert Heaton](https://robertheaton.com/gameboy-doctor/), [Matt Currie](https://github.com/mattcurrie/dmg-acid2), and Blargg.
