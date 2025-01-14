@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>Game Boy (DMG) Emulator</h1>
+  <h1>Game Boy (DMG-01) Emulator</h1>
 </div>
 
 This is a project attempting to emulate the hardware of an original 1989 Nintendo Gameboy, codenamed the DMG. The DMG possessed a Sharp SM83 CPU, which was based loosely on the Zilog Z80 and Intel 8080 microprocessors. The SM83 has seven 8-bit registers, which can be combined to form four 16-bit registers. There is also the stack pointer and the program counter registers, both of which are 16 bits. Some instructions set flags after executing, which are contained in the lower bits of one of the 16-bit registers (AF).
@@ -69,4 +69,5 @@ Interrupts:
 
 # Acknowledgements 
 - The helpful community members in the Emulator Development GB discord channel [(link)](https://discordapp.com/channels/465585922579103744/465586075830845475)
-- Tooling and testing by [Robert Heaton](https://robertheaton.com/gameboy-doctor/), [Matt Currie](https://github.com/mattcurrie/dmg-acid2), and Blargg.
+- Tooling and testing by [Robert Heaton](https://robertheaton.com/gameboy-doctor/), [Matt Currie](https://github.com/mattcurrie/dmg-acid2), and Blargg. [Single Step Tests for the SM83](https://github.com/SingleStepTests/sm83) also very informative.
+- Documentation from the [pandocs](https://gbdev.io/pandocs/) the best source of GB specifications. 
