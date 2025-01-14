@@ -67,6 +67,22 @@ Interrupts:
 - There are many times when the CPU should not have access to certain areas of memory depending on the state of other components.
 - There are also certain sections of memory that cannot be accessed, or can only be accessed at certain times.
 
+# Running the Emulator
+1) Clone the Repo
+``` git clone https://github.com/seanbeaulieu/gameboy.git ```
+2) Dependencies
+- SDL2
+- gcc
+- make
+3) Run your ROM
+``` ./gameboy-emulator your_rom.gb ```
+4) Controls:
+- A: a button
+- B: b button
+- Q: select
+- W: start
+- Arrow Keys: dpad
+
 # Acknowledgements 
 - The helpful community members in the Emulator Development GB discord channel [(link)](https://discordapp.com/channels/465585922579103744/465586075830845475)
 - Tooling and testing by [Robert Heaton](https://robertheaton.com/gameboy-doctor/), [Matt Currie](https://github.com/mattcurrie/dmg-acid2), and Blargg. [Single Step Tests for the SM83](https://github.com/SingleStepTests/sm83) also very informative.
