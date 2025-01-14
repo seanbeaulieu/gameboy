@@ -68,16 +68,27 @@ Interrupts:
 - There are also certain sections of memory that cannot be accessed, or can only be accessed at certain times.
 
 # Running the Emulator
-1) Clone the Repo
-```git clone https://github.com/seanbeaulieu/Game Boy.git ```
-2) Dependencies
+## 1. Clone the Repo
+
+```console
+$ git clone https://github.com/seanbeaulieu/gameboy.git
+```
+
+## 2. Dependencies
+
 - SDL2
 - gcc
 - make
-3) Build and run your ROM
-``` make ```
-``` ./gameboy-emulator your_rom.gb ```
-4) Controls:
+
+## 3. Build and run your ROM
+
+```console
+$ make
+$ ./gameboy-emulator your_rom.gb
+```
+
+## 4. Controls:
+
 - A: a button
 - B: b button
 - Q: select
