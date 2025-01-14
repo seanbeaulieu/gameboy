@@ -2,20 +2,20 @@
   <h1>Game Boy (DMG-01) Emulator</h1>
 </div>
 
-This is a project attempting to emulate the hardware of an original 1989 Nintendo Gameboy, codenamed the DMG. The DMG possessed a Sharp SM83 CPU, which was based loosely on the Zilog Z80 and Intel 8080 microprocessors. The SM83 has seven 8-bit registers, which can be combined to form four 16-bit registers. There is also the stack pointer and the program counter registers, both of which are 16 bits. Some instructions set flags after executing, which are contained in the lower bits of one of the 16-bit registers (AF).
+This is a project attempting to emulate the hardware of an original 1989 Nintendo Game Boy, codenamed the DMG-01. The DMG possessed a Sharp SM83 CPU, which was based loosely on the Zilog Z80 and Intel 8080 microprocessors. The SM83 has seven 8-bit registers, which can be combined to form four 16-bit registers. There is also the stack pointer and the program counter registers, both of which are 16 bits. Some instructions set flags after executing, which are contained in the lower bits of one of the 16-bit registers (AF).
 
-The display of the DMG is a 160x144 pixel LCD screen. The original Gameboy only had four shades of green that could be displayed, which is in stark contrast to the 32768 available to the later Gameboy Color. The LCD is managed by a Picture Processing Unit, which runs at a 59.73 Hz refresh rate, operating alongside the CPU.
+The display of the DMG is a 160x144 pixel LCD screen. The original Game Boy only had four shades of green that could be displayed, which is in stark contrast to the 32768 available to the later Game Boy Color. The LCD is managed by a Picture Processing Unit, which runs at a 59.73 Hz refresh rate, operating alongside the CPU.
 
 The DMG has 8 KiB of both Work RAM and Video RAM. It can play games up to 64kb, although does have functionality for cartridges that add memory via Memory Bank Controllers. 
 
 <div align="center">
   <h2>Tetris</h2>
-  <img src="https://github.com/seanbeaulieu/gameboy/blob/main/tetrisgif.gif" alt="tetris gameplay">
+  <img src="https://github.com/seanbeaulieu/Game Boy/blob/main/tetrisgif.gif" alt="tetris gameplay">
 </div>
 
 <div align="center">
   <h2>Pokemon Blue</h2>
-  <img src="https://github.com/seanbeaulieu/gameboy/blob/main/pokemonbluegif.gif" alt="tetris gameplay">
+  <img src="https://github.com/seanbeaulieu/Game Boy/blob/main/pokemonbluegif.gif" alt="tetris gameplay">
 </div>
 
 # Components
@@ -69,13 +69,13 @@ Interrupts:
 
 # Running the Emulator
 1) Clone the Repo
-``` git clone https://github.com/seanbeaulieu/gameboy.git ```
+``` git clone https://github.com/seanbeaulieu/Game Boy.git ```
 2) Dependencies
 - SDL2
 - gcc
 - make
 3) Run your ROM
-``` ./gameboy-emulator your_rom.gb ```
+``` ./Game Boy-emulator your_rom.gb ```
 4) Controls:
 - A: a button
 - B: b button
@@ -85,5 +85,5 @@ Interrupts:
 
 # Acknowledgements 
 - The helpful community members in the Emulator Development GB discord channel [(link)](https://discordapp.com/channels/465585922579103744/465586075830845475)
-- Tooling and testing by [Robert Heaton](https://robertheaton.com/gameboy-doctor/), [Matt Currie](https://github.com/mattcurrie/dmg-acid2), and Blargg. [Single Step Tests for the SM83](https://github.com/SingleStepTests/sm83) also very informative.
+- Tooling and testing by [Robert Heaton](https://robertheaton.com/Game Boy-doctor/), [Matt Currie](https://github.com/mattcurrie/dmg-acid2), and Blargg. [Single Step Tests for the SM83](https://github.com/SingleStepTests/sm83) also very informative.
 - Documentation from the [pandocs](https://gbdev.io/pandocs/) the best source of GB specifications. 
