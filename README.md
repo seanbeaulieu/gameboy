@@ -97,5 +97,5 @@ $ ./gameboy-emulator your_rom.gb
 
 # Acknowledgements 
 - The helpful community members in the Emulator Development GB discord channel [(link)](https://discordapp.com/channels/465585922579103744/465586075830845475)
-- Tooling and testing by [Robert Heaton](https://robertheaton.com/Game Boy-doctor/), [Matt Currie](https://github.com/mattcurrie/dmg-acid2), and Blargg. [Single Step Tests for the SM83](https://github.com/SingleStepTests/sm83) also very informative.
+- Tooling and testing by [Robert Heaton](https://robertheaton.com/gameboy-doctor/), [Matt Currie](https://github.com/mattcurrie/dmg-acid2), and Blargg. [Single Step Tests for the SM83](https://github.com/SingleStepTests/sm83) also very informative.
 - Documentation from the [pandocs](https://gbdev.io/pandocs/) the best source of GB specifications. 
