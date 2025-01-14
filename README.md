@@ -69,13 +69,14 @@ Interrupts:
 
 # Running the Emulator
 1) Clone the Repo
-``` git clone https://github.com/seanbeaulieu/Game Boy.git ```
+```git clone https://github.com/seanbeaulieu/Game Boy.git ```
 2) Dependencies
 - SDL2
 - gcc
 - make
-3) Run your ROM
-``` ./Game Boy-emulator your_rom.gb ```
+3) Build and run your ROM
+``` make ```
+``` ./gameboy-emulator your_rom.gb ```
 4) Controls:
 - A: a button
 - B: b button
